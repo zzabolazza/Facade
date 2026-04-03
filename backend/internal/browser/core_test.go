@@ -4,6 +4,7 @@ import (
 	"ant-chrome/backend/internal/config"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -89,6 +90,84 @@ func TestResolveChromeBinaryNormalizesWindowsStyleRelativeCorePath(t *testing.T)
 				CoreId:    "core-144",
 				CoreName:  "Chrome 144",
 				CorePath:  `chrome\Chrom-144`,
+				IsDefault: true,
+			},
+		},
+	}
+
+	got, err := mgr.ResolveChromeBinary(&Profile{})
+	if err != nil {
+		t.Fatalf("ResolveChromeBinary 返回错误: %v", err)
+	}
+	if got != exePath {
+		t.Fatalf("ResolveChromeBinary 路径错误: got=%q want=%q", got, exePath)
+	}
+}
+
+func TestResolveChromeBinaryAcceptsDirectExecutablePath(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	coreDir := filepath.Join(root, "chrome-direct")
+	if err := os.MkdirAll(coreDir, 0o755); err != nil {
+		t.Fatalf("创建内核目录失败: %v", err)
+	}
+
+	exePath := filepath.Join(coreDir, filepath.FromSlash(CoreExecutableCandidates()[0]))
+	if err := os.MkdirAll(filepath.Dir(exePath), 0o755); err != nil {
+		t.Fatalf("创建可执行文件目录失败: %v", err)
+	}
+	if err := os.WriteFile(exePath, []byte("stub"), 0o755); err != nil {
+		t.Fatalf("写入可执行文件失败: %v", err)
+	}
+
+	cfg := config.DefaultConfig()
+	mgr := NewManager(cfg, root)
+	mgr.CoreDAO = &coreDAOStub{
+		list: []Core{
+			{
+				CoreId:    "core-direct",
+				CoreName:  "Chrome Direct",
+				CorePath:  exePath,
+				IsDefault: true,
+			},
+		},
+	}
+
+	got, err := mgr.ResolveChromeBinary(&Profile{})
+	if err != nil {
+		t.Fatalf("ResolveChromeBinary 返回错误: %v", err)
+	}
+	if got != exePath {
+		t.Fatalf("ResolveChromeBinary 路径错误: got=%q want=%q", got, exePath)
+	}
+}
+
+func TestResolveChromeBinaryAcceptsDarwinAppBundlePath(t *testing.T) {
+	t.Parallel()
+
+	if runtime.GOOS != "darwin" {
+		t.Skip("仅验证 darwin .app 路径解析")
+	}
+
+	root := t.TempDir()
+	appDir := filepath.Join(root, "Chromium.app")
+	exePath := filepath.Join(appDir, "Contents", "MacOS", "Chromium")
+	if err := os.MkdirAll(filepath.Dir(exePath), 0o755); err != nil {
+		t.Fatalf("创建可执行文件目录失败: %v", err)
+	}
+	if err := os.WriteFile(exePath, []byte("stub"), 0o755); err != nil {
+		t.Fatalf("写入可执行文件失败: %v", err)
+	}
+
+	cfg := config.DefaultConfig()
+	mgr := NewManager(cfg, root)
+	mgr.CoreDAO = &coreDAOStub{
+		list: []Core{
+			{
+				CoreId:    "core-app",
+				CoreName:  "Chromium App",
+				CorePath:  appDir,
 				IsDefault: true,
 			},
 		},
