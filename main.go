@@ -197,13 +197,14 @@ func main() {
 	var wailsCtx context.Context
 	startupReached := make(chan struct{})
 	go func() {
-		for range singleInstance.activation {
+		for activation := range singleInstance.activation {
 			if wailsCtx == nil {
 				select {
 				case <-startupReached:
 				case <-time.After(12 * time.Second):
 				}
 				if wailsCtx == nil {
+					close(activation.done)
 					continue
 				}
 			}
@@ -212,6 +213,7 @@ func main() {
 			runtime.WindowSetAlwaysOnTop(wailsCtx, true)
 			runtime.WindowSetAlwaysOnTop(wailsCtx, false)
 			activateExistingSingleInstanceWindow(os.Getpid())
+			close(activation.done)
 		}
 	}()
 

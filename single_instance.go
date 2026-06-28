@@ -23,7 +23,11 @@ type singleInstanceGuard struct {
 	lockPath   string
 	lock       *singleInstanceFileLock
 	listener   net.Listener
-	activation chan struct{}
+	activation chan singleInstanceActivationRequest
+}
+
+type singleInstanceActivationRequest struct {
+	done chan struct{}
 }
 
 func acquireSingleInstance(appRoot string) (*singleInstanceGuard, bool, error) {
@@ -55,7 +59,7 @@ func acquireSingleInstance(appRoot string) (*singleInstanceGuard, bool, error) {
 				lockPath:   lockPath,
 				lock:       lock,
 				listener:   listener,
-				activation: make(chan struct{}, 1),
+				activation: make(chan singleInstanceActivationRequest, 8),
 			}
 			go guard.serve()
 			return guard, true, nil
@@ -137,8 +141,13 @@ func (g *singleInstanceGuard) handleConn(conn net.Conn) {
 	if strings.TrimSpace(message) != "activate" {
 		return
 	}
+	done := make(chan struct{})
 	select {
-	case g.activation <- struct{}{}:
+	case g.activation <- singleInstanceActivationRequest{done: done}:
+		select {
+		case <-done:
+		case <-time.After(3 * time.Second):
+		}
 	default:
 	}
 	_, _ = conn.Write([]byte("ok\n"))
