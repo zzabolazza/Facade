@@ -1,13 +1,5 @@
-﻿import type { BrowserProxy, ProxyBridgeWarmupResult, ProxyCoreDownloadInfoResult, ProxyCoreStatusResult, ProxyIPHealthResult, ProxyLocationResolveResult, ProxySpeedTestResult } from '../types'
-import { getBindings, getGoApp, getMockProxies, nowISOString, setMockProxies } from './runtime'
-
-export interface ClashImportURLResult {
-  url: string
-  content: string
-  proxyCount: number
-  dnsServers?: string
-  suggestedGroup?: string
-}
+import type { BrowserProxy, ProxyIPHealthResult, ProxyLocationResolveResult, ProxySpeedTestResult } from '../types'
+import { getBindings, getMockProxies, nowISOString, setMockProxies } from './runtime'
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -35,51 +27,6 @@ export async function fetchBrowserProxiesByGroup(groupName: string): Promise<Bro
     return (await bindings.BrowserProxyListByGroup(groupName)) || []
   }
   return getMockProxies().filter((proxy) => proxy.groupName === groupName)
-}
-
-export async function fetchClashImportFromURL(targetURL: string, proxyId = ''): Promise<ClashImportURLResult> {
-  const bindings: any = await getBindings()
-  const trimmedProxyId = proxyId.trim()
-  if (trimmedProxyId && bindings?.BrowserProxyFetchClashByURLWithProxy) {
-    return (
-      (await bindings.BrowserProxyFetchClashByURLWithProxy(targetURL, trimmedProxyId)) || {
-        url: targetURL,
-        content: '',
-        proxyCount: 0,
-      }
-    )
-  }
-  if (bindings?.BrowserProxyFetchClashByURL) {
-    return (
-      (await bindings.BrowserProxyFetchClashByURL(targetURL)) || {
-        url: targetURL,
-        content: '',
-        proxyCount: 0,
-      }
-    )
-  }
-
-  const goApp = getGoApp()
-  if (trimmedProxyId && goApp?.BrowserProxyFetchClashByURLWithProxy) {
-    return (
-      (await goApp.BrowserProxyFetchClashByURLWithProxy(targetURL, trimmedProxyId)) || {
-        url: targetURL,
-        content: '',
-        proxyCount: 0,
-      }
-    )
-  }
-  if (goApp?.BrowserProxyFetchClashByURL) {
-    return (
-      (await goApp.BrowserProxyFetchClashByURL(targetURL)) || {
-        url: targetURL,
-        content: '',
-        proxyCount: 0,
-      }
-    )
-  }
-
-  throw new Error('当前环境不支持 URL 导入 Clash 配置')
 }
 
 export async function saveBrowserProxies(proxies: BrowserProxy[]): Promise<boolean> {
@@ -134,46 +81,6 @@ export async function browserProxyBatchTestSpeed(proxyIds: string[], concurrency
   }
   await sleep(1000)
   return proxyIds.map((proxyId) => ({ proxyId, ok: true, latencyMs: Math.floor(100 + Math.random() * 400), engine: 'mock', error: '' }))
-}
-
-export async function browserProxyWarmupBridge(proxyId: string): Promise<ProxyBridgeWarmupResult> {
-  const bindings: any = await getBindings()
-  if (bindings?.BrowserProxyWarmupBridge) {
-    return (await bindings.BrowserProxyWarmupBridge(proxyId)) || {
-      proxyId,
-      ok: false,
-      engine: '',
-      socksUrl: '',
-      latencyMs: 0,
-      error: '调用失败',
-    }
-  }
-  await sleep(200)
-  return { proxyId, ok: true, engine: 'mock', socksUrl: '', latencyMs: 0, error: '' }
-}
-
-export async function browserProxyWarmupBridgeWithConfig(proxyId: string, proxyConfig: string): Promise<ProxyBridgeWarmupResult> {
-  const bindings: any = await getBindings()
-  if (bindings?.BrowserProxyWarmupBridgeWithConfig) {
-    return (await bindings.BrowserProxyWarmupBridgeWithConfig(proxyId, proxyConfig)) || {
-      proxyId,
-      ok: false,
-      engine: '',
-      socksUrl: '',
-      latencyMs: 0,
-      error: '调用失败',
-    }
-  }
-  return browserProxyWarmupBridge(proxyId)
-}
-
-export async function browserProxyBatchWarmupBridge(proxyIds: string[], concurrency: number = 5): Promise<ProxyBridgeWarmupResult[]> {
-  const bindings: any = await getBindings()
-  if (bindings?.BrowserProxyBatchWarmupBridge) {
-    return (await bindings.BrowserProxyBatchWarmupBridge(proxyIds, concurrency)) || []
-  }
-  await sleep(400)
-  return proxyIds.map((proxyId) => ({ proxyId, ok: true, engine: 'mock', socksUrl: '', latencyMs: 0, error: '' }))
 }
 
 export async function browserProxyCheckIPHealth(proxyId: string): Promise<ProxyIPHealthResult> {
@@ -277,42 +184,4 @@ export async function browserProxyBatchCheckIPHealth(proxyIds: string[], concurr
     rawData: {},
     updatedAt: nowISOString(),
   }))
-}
-
-export async function browserProxyCoreDownload(core: string, goos: string, goarch: string, proxyConfig = ''): Promise<boolean> {
-  const bindings: any = await getBindings()
-  if (bindings?.BrowserProxyCoreDownload) {
-    await bindings.BrowserProxyCoreDownload({ core, goos, goarch, proxyConfig })
-    return true
-  }
-  return false
-}
-
-export async function browserProxyCoreStatus(core: string, goos: string, goarch: string): Promise<ProxyCoreStatusResult> {
-  const bindings: any = await getBindings()
-  if (bindings?.BrowserProxyCoreStatus) {
-    return (await bindings.BrowserProxyCoreStatus({ core, goos, goarch })) || {
-      core, goos, goarch, installed: false, configured: false, active: false, binaryPath: '', source: '', message: '状态查询失败',
-    }
-  }
-  return { core, goos, goarch, installed: false, configured: false, active: false, binaryPath: '', source: '', message: '未连接后端' }
-}
-
-export async function browserProxyCoreDownloadInfo(core: string, goos: string, goarch: string, proxyConfig = ''): Promise<ProxyCoreDownloadInfoResult> {
-  const bindings: any = await getBindings()
-  if (bindings?.BrowserProxyCoreDownloadInfo) {
-    return (await bindings.BrowserProxyCoreDownloadInfo({ core, goos, goarch, proxyConfig })) || {
-      core, goos, goarch, version: '', repo: '', releaseUrl: '', downloadUrl: '', assetName: '', installDir: '', binaryName: '', message: '下载信息查询失败',
-    }
-  }
-  return { core, goos, goarch, version: '', repo: '', releaseUrl: '', downloadUrl: '', assetName: '', installDir: '', binaryName: '', message: '未连接后端' }
-}
-
-export async function browserProxyCoreOpenLocal(core: string, goos: string, goarch: string): Promise<boolean> {
-  const bindings: any = await getBindings()
-  if (bindings?.BrowserProxyCoreOpenLocal) {
-    await bindings.BrowserProxyCoreOpenLocal({ core, goos, goarch })
-    return true
-  }
-  return false
 }

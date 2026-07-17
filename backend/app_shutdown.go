@@ -85,16 +85,6 @@ func (a *App) stopRuntimeServices() {
 			a.speedScheduler = nil
 		}
 		a.stopTrackedBrowserProcesses()
-		if a.xrayMgr != nil {
-			a.xrayMgr.StopAll()
-		}
-		a.clearProfileProxyBridges()
-		if a.clashMgr != nil {
-			a.clashMgr.StopAll()
-		}
-		if a.singboxMgr != nil {
-			a.singboxMgr.StopAll()
-		}
 	})
 }
 

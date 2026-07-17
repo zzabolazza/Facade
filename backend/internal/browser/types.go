@@ -16,8 +16,6 @@ type Profile struct {
 	FingerprintArgs    []string `json:"fingerprintArgs"`
 	ProxyId            string   `json:"proxyId"`
 	ProxyConfig        string   `json:"proxyConfig"`
-	ProxyBindSourceID  string   `json:"proxyBindSourceId"`
-	ProxyBindSourceURL string   `json:"proxyBindSourceUrl"`
 	ProxyBindName      string   `json:"proxyBindName"`
 	ProxyBindUpdatedAt string   `json:"proxyBindUpdatedAt"`
 	LaunchArgs         []string `json:"launchArgs"`
@@ -74,9 +72,8 @@ type Settings struct {
 	DefaultStartURLs       []string `json:"defaultStartUrls"`
 	LightStartEnabled      bool     `json:"lightStartEnabled"`
 	RestoreLastSession     bool     `json:"restoreLastSession"`
-	StartReadyTimeoutMs    int      `json:"startReadyTimeoutMs"`
-	StartStableWindowMs    int      `json:"startStableWindowMs"`
-	DefaultConnectorType   string   `json:"defaultConnectorType"`
+	StartReadyTimeoutMs int `json:"startReadyTimeoutMs"`
+	StartStableWindowMs int `json:"startStableWindowMs"`
 }
 
 // CoreInput 内核配置输入
@@ -142,7 +139,6 @@ type Manager struct {
 	Profiles         map[string]*Profile
 	Mutex            sync.Mutex
 	BrowserProcesses map[string]*exec.Cmd
-	XrayBridges      map[string]*XrayBridge
 	CodeProvider     CodeProvider
 
 	// DAO 层（注入后使用 SQLite 存储，未注入时降级到 config.yaml）
@@ -154,16 +150,6 @@ type Manager struct {
 	ExtensionDAO ExtensionDAO
 }
 
-// XrayBridge Xray 桥接进程
-type XrayBridge struct {
-	NodeKey   string
-	Port      int
-	Cmd       *exec.Cmd
-	Pid       int
-	Running   bool
-	LastError string
-}
-
 // NewManager 创建浏览器管理器
 func NewManager(cfg *config.Config, appRoot string) *Manager {
 	return &Manager{
@@ -171,7 +157,6 @@ func NewManager(cfg *config.Config, appRoot string) *Manager {
 		AppRoot:          appRoot,
 		Profiles:         make(map[string]*Profile),
 		BrowserProcesses: make(map[string]*exec.Cmd),
-		XrayBridges:      make(map[string]*XrayBridge),
 	}
 }
 

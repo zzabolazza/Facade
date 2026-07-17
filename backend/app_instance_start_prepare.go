@@ -29,8 +29,6 @@ type browserStartPlan struct {
 	extensionDirs        []string
 	deferredStartTargets []string
 	effectiveProxy       string
-	acquiredProxyBridge  profileProxyBridgeRef
-	releaseProxyBridge   bool
 	assignedDebugPort    int
 	startReadyTimeout    time.Duration
 	startStableWindow    time.Duration
@@ -57,15 +55,6 @@ func newBrowserStartInput(profileID string, extraLaunchArgs []string, startURLs 
 
 func (input browserStartInput) hasTemporaryProxy() bool {
 	return strings.TrimSpace(input.TemporaryProxyID) != "" || strings.TrimSpace(input.TemporaryProxyConfig) != ""
-}
-
-func (plan *browserStartPlan) releaseBridgeIfNeeded(a *App) {
-	if plan == nil || a == nil {
-		return
-	}
-	if plan.releaseProxyBridge {
-		a.releaseProxyBridgeRef(plan.acquiredProxyBridge)
-	}
 }
 
 func (a *App) resolveBrowserStartProfile(input browserStartInput) (*BrowserProfile, bool, error) {
@@ -121,7 +110,7 @@ func (a *App) prepareBrowserStartPlan(input browserStartInput, profile *BrowserP
 		return nil, err
 	}
 
-	effectiveProxy, acquiredProxyBridge, releaseProxyBridge, err := a.resolveBrowserStartProxy(input, profile)
+	effectiveProxy, err := a.resolveBrowserStartProxy(input, profile)
 	if err != nil {
 		return nil, err
 	}
@@ -160,8 +149,6 @@ func (a *App) prepareBrowserStartPlan(input browserStartInput, profile *BrowserP
 		args:                 buildBrowserLaunchArgs(profile, userDataDir, assignedDebugPort, effectiveProxy, extensionDirs, sanitizedProfileLaunchArgs, sanitizedExtraLaunchArgs, launchTargets),
 		deferredStartTargets: deferredStartTargets,
 		effectiveProxy:       effectiveProxy,
-		acquiredProxyBridge:  acquiredProxyBridge,
-		releaseProxyBridge:   releaseProxyBridge,
 		assignedDebugPort:    assignedDebugPort,
 		startReadyTimeout:    startReadyTimeout,
 		startStableWindow:    startStableWindow,

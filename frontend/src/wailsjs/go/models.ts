@@ -393,28 +393,6 @@ export namespace backend {
 	        this.message = source["message"];
 	    }
 	}
-	export class ProxyBridgeWarmupResult {
-	    proxyId: string;
-	    ok: boolean;
-	    engine: string;
-	    socksUrl: string;
-	    latencyMs: number;
-	    error: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ProxyBridgeWarmupResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.proxyId = source["proxyId"];
-	        this.ok = source["ok"];
-	        this.engine = source["engine"];
-	        this.socksUrl = source["socksUrl"];
-	        this.latencyMs = source["latencyMs"];
-	        this.error = source["error"];
-	    }
-	}
 	export class ProxyBrowserProbeRequest {
 	    proxyId: string;
 	    urls: string[];
@@ -461,86 +439,6 @@ export namespace backend {
 	        this.failed = source["failed"];
 	        this.concurrency = source["concurrency"];
 	        this.error = source["error"];
-	    }
-	}
-	export class ProxyCoreDownloadInfoResult {
-	    core: string;
-	    goos: string;
-	    goarch: string;
-	    version: string;
-	    repo: string;
-	    releaseUrl: string;
-	    downloadUrl: string;
-	    assetName: string;
-	    installDir: string;
-	    binaryName: string;
-	    message: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ProxyCoreDownloadInfoResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.core = source["core"];
-	        this.goos = source["goos"];
-	        this.goarch = source["goarch"];
-	        this.version = source["version"];
-	        this.repo = source["repo"];
-	        this.releaseUrl = source["releaseUrl"];
-	        this.downloadUrl = source["downloadUrl"];
-	        this.assetName = source["assetName"];
-	        this.installDir = source["installDir"];
-	        this.binaryName = source["binaryName"];
-	        this.message = source["message"];
-	    }
-	}
-	export class ProxyCoreDownloadRequest {
-	    core: string;
-	    goos: string;
-	    goarch: string;
-	    proxyConfig: string;
-	    version: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ProxyCoreDownloadRequest(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.core = source["core"];
-	        this.goos = source["goos"];
-	        this.goarch = source["goarch"];
-	        this.proxyConfig = source["proxyConfig"];
-	        this.version = source["version"];
-	    }
-	}
-	export class ProxyCoreStatusResult {
-	    core: string;
-	    goos: string;
-	    goarch: string;
-	    installed: boolean;
-	    configured: boolean;
-	    active: boolean;
-	    binaryPath: string;
-	    source: string;
-	    message: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ProxyCoreStatusResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.core = source["core"];
-	        this.goos = source["goos"];
-	        this.goarch = source["goarch"];
-	        this.installed = source["installed"];
-	        this.configured = source["configured"];
-	        this.active = source["active"];
-	        this.binaryPath = source["binaryPath"];
-	        this.source = source["source"];
-	        this.message = source["message"];
 	    }
 	}
 	export class ProxyIPHealthResult {
@@ -1031,8 +929,6 @@ export namespace browser {
 	    fingerprintArgs: string[];
 	    proxyId: string;
 	    proxyConfig: string;
-	    proxyBindSourceId: string;
-	    proxyBindSourceUrl: string;
 	    proxyBindName: string;
 	    proxyBindUpdatedAt: string;
 	    launchArgs: string[];
@@ -1065,8 +961,6 @@ export namespace browser {
 	        this.fingerprintArgs = source["fingerprintArgs"];
 	        this.proxyId = source["proxyId"];
 	        this.proxyConfig = source["proxyConfig"];
-	        this.proxyBindSourceId = source["proxyBindSourceId"];
-	        this.proxyBindSourceUrl = source["proxyBindSourceUrl"];
 	        this.proxyBindName = source["proxyBindName"];
 	        this.proxyBindUpdatedAt = source["proxyBindUpdatedAt"];
 	        this.launchArgs = source["launchArgs"];
@@ -1158,7 +1052,6 @@ export namespace browser {
 	    restoreLastSession: boolean;
 	    startReadyTimeoutMs: number;
 	    startStableWindowMs: number;
-	    defaultConnectorType: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Settings(source);
@@ -1174,7 +1067,6 @@ export namespace browser {
 	        this.restoreLastSession = source["restoreLastSession"];
 	        this.startReadyTimeoutMs = source["startReadyTimeoutMs"];
 	        this.startStableWindowMs = source["startStableWindowMs"];
-	        this.defaultConnectorType = source["defaultConnectorType"];
 	    }
 	}
 	export class Tab {
@@ -1238,16 +1130,8 @@ export namespace config {
 	    proxyId: string;
 	    proxyName: string;
 	    proxyConfig: string;
-	    preferredKernel?: string;
-	    dnsServers?: string;
 	    groupName?: string;
 	    sortOrder?: number;
-	    sourceId?: string;
-	    sourceUrl?: string;
-	    sourceNamePrefix?: string;
-	    sourceAutoRefresh?: boolean;
-	    sourceRefreshIntervalM?: number;
-	    sourceLastRefreshAt?: string;
 	    lastLatencyMs: number;
 	    lastTestOk: boolean;
 	    lastTestedAt: string;
@@ -1262,16 +1146,8 @@ export namespace config {
 	        this.proxyId = source["proxyId"];
 	        this.proxyName = source["proxyName"];
 	        this.proxyConfig = source["proxyConfig"];
-	        this.preferredKernel = source["preferredKernel"];
-	        this.dnsServers = source["dnsServers"];
 	        this.groupName = source["groupName"];
 	        this.sortOrder = source["sortOrder"];
-	        this.sourceId = source["sourceId"];
-	        this.sourceUrl = source["sourceUrl"];
-	        this.sourceNamePrefix = source["sourceNamePrefix"];
-	        this.sourceAutoRefresh = source["sourceAutoRefresh"];
-	        this.sourceRefreshIntervalM = source["sourceRefreshIntervalM"];
-	        this.sourceLastRefreshAt = source["sourceLastRefreshAt"];
 	        this.lastLatencyMs = source["lastLatencyMs"];
 	        this.lastTestOk = source["lastTestOk"];
 	        this.lastTestedAt = source["lastTestedAt"];
@@ -1303,7 +1179,7 @@ export namespace config {
 	    }
 	}
 	export class ProxyCheckConfig {
-	    bridgeStartTimeoutMs: number;
+	    prepareTimeoutMs: number;
 	    speedTargetId: string;
 	    ipHealthTargetId: string;
 	    targets: ProxyCheckTarget[];
@@ -1314,7 +1190,7 @@ export namespace config {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.bridgeStartTimeoutMs = source["bridgeStartTimeoutMs"];
+	        this.prepareTimeoutMs = source["prepareTimeoutMs"];
 	        this.speedTargetId = source["speedTargetId"];
 	        this.ipHealthTargetId = source["ipHealthTargetId"];
 	        this.targets = this.convertValues(source["targets"], ProxyCheckTarget);
@@ -1405,74 +1281,14 @@ export namespace logger {
 
 export namespace proxy {
 	
-	export class DnsDiagnosticSummary {
-	    hasConfig: boolean;
-	    sourceFormat: string;
-	    enhancedMode: string;
-	    nameserverCount: number;
-	    fallbackCount: number;
-	    xrayServerCount: number;
-	    unsupported: string[];
-	
-	    static createFrom(source: any = {}) {
-	        return new DnsDiagnosticSummary(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.hasConfig = source["hasConfig"];
-	        this.sourceFormat = source["sourceFormat"];
-	        this.enhancedMode = source["enhancedMode"];
-	        this.nameserverCount = source["nameserverCount"];
-	        this.fallbackCount = source["fallbackCount"];
-	        this.xrayServerCount = source["xrayServerCount"];
-	        this.unsupported = source["unsupported"];
-	    }
-	}
-	export class ProxyRuntimeDiagnostic {
-	    workDir: string;
-	    configPath: string;
-	    stderrPath: string;
-	    logPath: string;
-	    errorPath: string;
-	    recentLogs: Record<string, string>;
-	    bridgeAlive: boolean;
-	    bridgePort: number;
-	    lastError: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ProxyRuntimeDiagnostic(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.workDir = source["workDir"];
-	        this.configPath = source["configPath"];
-	        this.stderrPath = source["stderrPath"];
-	        this.logPath = source["logPath"];
-	        this.errorPath = source["errorPath"];
-	        this.recentLogs = source["recentLogs"];
-	        this.bridgeAlive = source["bridgeAlive"];
-	        this.bridgePort = source["bridgePort"];
-	        this.lastError = source["lastError"];
-	    }
-	}
 	export class ProxyBuildDiagnostic {
 	    proxyId: string;
 	    proxyName: string;
 	    found: boolean;
 	    ok: boolean;
 	    engine: string;
-	    nodeKey: string;
 	    rawConfigMasked: string;
-	    dnsServers: string;
-	    dnsSummary: DnsDiagnosticSummary;
 	    standardProxy: string;
-	    outbounds: any[];
-	    routes: any[];
-	    inbound: Record<string, any>;
-	    outbound: Record<string, any>;
-	    runtime: ProxyRuntimeDiagnostic;
 	    errors: string[];
 	
 	    static createFrom(source: any = {}) {
@@ -1486,36 +1302,10 @@ export namespace proxy {
 	        this.found = source["found"];
 	        this.ok = source["ok"];
 	        this.engine = source["engine"];
-	        this.nodeKey = source["nodeKey"];
 	        this.rawConfigMasked = source["rawConfigMasked"];
-	        this.dnsServers = source["dnsServers"];
-	        this.dnsSummary = this.convertValues(source["dnsSummary"], DnsDiagnosticSummary);
 	        this.standardProxy = source["standardProxy"];
-	        this.outbounds = source["outbounds"];
-	        this.routes = source["routes"];
-	        this.inbound = source["inbound"];
-	        this.outbound = source["outbound"];
-	        this.runtime = this.convertValues(source["runtime"], ProxyRuntimeDiagnostic);
 	        this.errors = source["errors"];
 	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 
 }

@@ -1,4 +1,4 @@
-﻿# Ant Browser
+# Ant Browser
 
 > 面向多账号隔离、代理绑定和本地环境管理的桌面浏览器工具（Windows / Linux / macOS unsigned）。
 
@@ -80,19 +80,18 @@ Ant Browser 适合以下场景：
 
 - `master`：面向开发者的干净基线分支，不提交 `data/app.db`、实例目录或其他用户数据。首次启动时会自动初始化空数据库。
 - `user_data`：在 `master` 基础上额外提交一份 `data/app.db` 测试快照，便于演示、联调和复现问题。
-- 代理运行时 `bin/xray.exe`、`bin/sing-box.exe` 已随源码仓库提供；开发和发布打包不需要再单独下载这些运行时文件。
 
 ## 核心特性
 
 - 实例隔离管理：支持创建、编辑、启动、停止、重启、克隆和删除浏览器实例
-- 代理池配置：支持统一维护代理节点，并将代理分配到具体实例
-- 多协议支持：支持常见代理配置方式，并支持导入 Clash
+- 代理池配置：支持统一维护原生代理链接，并将代理分配到具体实例
+- 多协议支持：支持 `direct://` / `http://` / `https://` / `socks5://`
 - 内核管理：支持维护多个 Chrome 内核版本，并设置默认内核
 - 快捷启动：支持通过实例 Code 和 `Ctrl + K` 快速打开目标实例
 - 标签与检索：支持按标签、关键字、状态、代理、内核、分组进行筛选
 - 插件管理：支持插件安装、导入、启停、删除、实例限制和单实例插件配置
 - 实例迁移：支持将实例配置和浏览器用户数据目录导出为 ZIP，并导入为新实例
-- VPN / 代理检测：支持连接栈预热、测速、IP 健康检测和代理异常处理
+- VPN / 代理检测：支持测速、IP 健康检测和代理异常处理
 - 本地化存储：配置和实例数据保存在本地，适合长期使用和备份
 
 ## 界面预览
@@ -116,16 +115,13 @@ Ant Browser 适合以下场景：
 
 - 统一管理代理节点
 - 支持按协议、分组筛选代理
-- 支持手动维护代理和导入 Clash
+- 支持录入原生代理链接（`direct://` / `http://` / `https://` / `socks5://`）
 - 支持查看延迟、IP 健康并挑选可用节点
 
-代理连接栈规则：
+代理规则：
 
-- `default_connector_type` 只有两套连接栈：`xray` 和 `mihomo`。
-- `xray` 表示 Xray + sing-box 组合栈：Xray 负责 vmess/vless/trojan/shadowsocks/链式代理等，sing-box 负责 hysteria2/tuic/anytls 等协议。
-- `mihomo` 表示独立 Mihomo 栈：需要桥接的代理统一走 mihomo。
-- 实例启动、代理测速、真实连通性、IP 健康、预热和插件下载代理必须按当前连接栈执行；不得在 `xray` 组合栈和 `mihomo` 栈之间自动混用。
-- 详细约束见 `docs/proxy-connector-stacks.md`。
+- 指纹浏览器只使用 Chromium 原生代理链接，不再内置或管理 xray / sing-box / mihomo。
+- 高级协议节点不可用于启动、测速与 IP 健康检测。
 
 ### 3. 代理生效验证
 
@@ -161,9 +157,6 @@ Ant Browser 适合以下场景：
 1. 开发默认使用 `master` 分支；该分支不带测试用户数据，适合作为日常开发基线。
 2. 如需带测试库的演示环境，请切换到 `user_data` 分支。
 3. Windows 统一执行 `bat\dev.bat`；默认是 `live` 热更新模式，如需静态资源排查使用 `bat\dev.bat stable`，如需受限内存复现使用 `bat\dev.bat limited`。
-4. Windows 运行时使用 `bin/xray.exe`、`bin/sing-box.exe`；Linux 运行时使用 `bin/linux-<arch>/xray`、`bin/linux-<arch>/sing-box`；macOS 运行时使用 `bin/darwin-<arch>/xray`、`bin/darwin-<arch>/sing-box`。
-5. 运行时文件采用“仓库固定 + 哈希校验”，校验清单在 `publish/runtime-manifest.json`，固定来源清单在 `publish/runtime-sources.json`。
-6. 如需刷新 Linux / macOS 运行时，执行 `python3 tools/runtime/sync-runtime.py --target <target>`（会按固定来源下载、校验归档并更新 manifest）。
 
 开发模式说明：
 
@@ -248,7 +241,7 @@ bash publish/mac/publish-mac.sh --arch arm64
 
 先检查代理节点本身是否可用，再确认该实例已经正确绑定代理。建议启动后访问 IP 检测网站复核当前出口。
 
-如果代理池里本地客户端可用节点很多，但 Ant Browser 中“只展示可用”数量明显偏少，先确认当前 `default_connector_type` 是否与本地客户端一致。Ant Browser 不会在 `xray` 组合栈和 `mihomo` 栈之间自动混用；切换连接栈后需要重新测速。
+仅原生代理链接可用；vmess/vless/hysteria2 等高级协议不会被启动或测速。
 
 ### 3. 实例太多，怎么快速找到目标实例？
 

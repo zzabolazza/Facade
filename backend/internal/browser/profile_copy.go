@@ -87,8 +87,6 @@ func (m *Manager) copyProfile(profileId string, newName string, fingerprintResol
 		FingerprintArgs:    fingerprintResolver(src),
 		ProxyId:            src.ProxyId,
 		ProxyConfig:        src.ProxyConfig,
-		ProxyBindSourceID:  src.ProxyBindSourceID,
-		ProxyBindSourceURL: src.ProxyBindSourceURL,
 		ProxyBindName:      src.ProxyBindName,
 		ProxyBindUpdatedAt: src.ProxyBindUpdatedAt,
 		LaunchArgs:         append([]string{}, src.LaunchArgs...),

@@ -2,30 +2,20 @@ import { Button } from '../../../../shared/components'
 
 interface ProxyPoolHeaderProps {
   checkingAllIPHealth: boolean
-  currentConnectorStatus: string
-  hasURLImportSources: boolean
   onCheckAllIPHealth: () => void
   onOpenImport: () => void
-  onOpenCoreDownload: () => void
   onOpenSettings: () => void
-  onRefreshAllSources: () => void
   onTestAll: () => void
-  refreshingAllSources: boolean
   testingAll: boolean
   totalCount: number
 }
 
 export function ProxyPoolHeader({
   checkingAllIPHealth,
-  currentConnectorStatus,
-  hasURLImportSources,
   onCheckAllIPHealth,
   onOpenImport,
-  onOpenCoreDownload,
   onOpenSettings,
-  onRefreshAllSources,
   onTestAll,
-  refreshingAllSources,
   testingAll,
   totalCount,
 }: ProxyPoolHeaderProps) {
@@ -36,27 +26,8 @@ export function ProxyPoolHeader({
       </div>
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] px-2 py-1 shadow-sm">
-          <span className="inline-flex items-center gap-1 whitespace-nowrap px-2 text-xs text-[var(--color-text-muted)]">
-            内核状态：{currentConnectorStatus || '未知'}
-          </span>
-          <Button size="sm" variant="secondary" onClick={onOpenCoreDownload}>下载内核</Button>
-        </div>
-        <div className="flex items-center gap-2 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-primary)] px-2 py-1 shadow-sm">
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={onOpenSettings}
-          >
+          <Button size="sm" variant="secondary" onClick={onOpenSettings}>
             检测设置
-          </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={onRefreshAllSources}
-            loading={refreshingAllSources}
-            disabled={!hasURLImportSources}
-          >
-            刷新订阅
           </Button>
           <Button
             size="sm"
@@ -77,7 +48,9 @@ export function ProxyPoolHeader({
             测试全部
           </Button>
         </div>
-        <Button size="sm" onClick={onOpenImport}>新建代理</Button>
+        <Button size="sm" onClick={onOpenImport}>
+          新建代理
+        </Button>
       </div>
     </div>
   )

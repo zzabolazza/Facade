@@ -25,15 +25,6 @@ func (a *App) ReloadConfig() error {
 		a.loadProxies()
 		a.reconcileProfileProxyBindings()
 	}
-	if a.xrayMgr != nil {
-		a.xrayMgr.Config = cfg
-	}
-	if a.clashMgr != nil {
-		a.clashMgr.Config = cfg
-	}
-	if a.singboxMgr != nil {
-		a.singboxMgr.Config = cfg
-	}
 	if a.launchServer != nil {
 		a.launchServer.SetAPIAuthConfig(launchcode.APIAuthConfig{
 			Enabled: cfg.LaunchServer.Auth.Enabled,

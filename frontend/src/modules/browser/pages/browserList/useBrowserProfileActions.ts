@@ -1,4 +1,4 @@
-﻿import type { Dispatch, SetStateAction } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { toast } from '../../../../shared/components'
 import {
   deleteBrowserProfile,
@@ -10,7 +10,6 @@ import {
 } from '../../api'
 import type { BrowserProfile } from '../../types'
 import { resolveActionErrorMessage, resolveActionFeedback } from '../../utils/actionErrors'
-import { warmupProfileProxyBeforeStart } from '../../utils/proxyWarmup'
 
 interface UseBrowserProfileActionsOptions {
   profiles: BrowserProfile[]
@@ -55,7 +54,6 @@ export function useBrowserProfileActions({
         }
       }
 
-      await warmupProfileProxyBeforeStart(profile)
       const startedProfile = await startBrowserInstance(profileId)
       mergeProfileState(startedProfile)
       if (startedProfile?.runtimeWarning) {
@@ -121,10 +119,8 @@ export function useBrowserProfileActions({
   }
 
   const handleRestart = async (profileId: string) => {
-    const profile = profiles.find(p => p.profileId === profileId)
     updatePendingIds(setStoppingIds, profileId, true)
     try {
-      await warmupProfileProxyBeforeStart(profile)
       const restartedProfile = await restartBrowserInstance(profileId)
       mergeProfileState(restartedProfile)
       toast.success(`实例已重启${restartedProfile?.profileName ? `：${restartedProfile.profileName}` : ''}`)

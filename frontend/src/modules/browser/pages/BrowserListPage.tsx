@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { toast } from '../../../shared/components'
 import type { BrowserProfile, BrowserProfileCopyOptions, BrowserProxy } from '../types'
 import { BrowserListHeader } from '../components/BrowserListLayout'
@@ -14,7 +14,6 @@ import { BrowserListDialogs } from './browserList/BrowserListDialogs'
 import { useBrowserListDerived, useBrowserListViewState } from './browserList/useBrowserListViewState'
 import { useBrowserListData } from './browserList/useBrowserListData'
 import { useBrowserProfileActions } from './browserList/useBrowserProfileActions'
-import { warmupProfileProxyBeforeStart } from '../utils/proxyWarmup'
 import {
   copyBrowserProfile,
   deleteBrowserProfile,
@@ -161,7 +160,6 @@ export function BrowserListPage() {
       if (!profile || profile.running) continue
       updatePendingIds(setStartingIds, id, true)
       try {
-        await warmupProfileProxyBeforeStart(profile)
         const startedProfile = await startBrowserInstance(id)
         mergeProfileState(startedProfile)
         success++

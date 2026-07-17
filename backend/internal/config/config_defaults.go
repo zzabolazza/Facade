@@ -8,32 +8,6 @@ import (
 
 var defaultBrowserStartURLs = []string{}
 
-const (
-	// BrowserConnectorXray 是历史 default_connector_type 的默认值。
-	// 新代理运行入口不再依赖全局连接栈，而是按单个代理自动解析 xray/sing-box/mihomo。
-	BrowserConnectorXray = "xray"
-	// BrowserConnectorMihomo 仅保留用于兼容旧配置、旧 API 和历史数据。
-	BrowserConnectorMihomo = "mihomo"
-)
-
-const (
-	BrowserConnectorXrayStack   = BrowserConnectorXray
-	BrowserConnectorMihomoStack = BrowserConnectorMihomo
-)
-
-// NormalizeBrowserConnectorType 只用于兼容历史 default_connector_type 输入。
-// 新代理执行入口应使用 proxy.ResolveProxyKernel 按单个代理选择内核。
-func NormalizeBrowserConnectorType(value string) string {
-	switch strings.ToLower(strings.TrimSpace(value)) {
-	case BrowserConnectorMihomo, "clash", "clash-meta":
-		return BrowserConnectorMihomo
-	case BrowserConnectorXray, "sing-box", "singbox", "sing_box", "":
-		return BrowserConnectorXray
-	default:
-		return BrowserConnectorXray
-	}
-}
-
 func DefaultBrowserStartURLs() []string {
 	return append([]string{}, defaultBrowserStartURLs...)
 }
@@ -135,7 +109,6 @@ func normalizeConfig(config *Config) {
 	if config.Browser.StartStableWindowMs <= 0 {
 		config.Browser.StartStableWindowMs = defaultConfig.Browser.StartStableWindowMs
 	}
-	config.Browser.DefaultConnectorType = NormalizeBrowserConnectorType(config.Browser.DefaultConnectorType)
 	if config.Browser.DefaultBookmarks == nil {
 		config.Browser.DefaultBookmarks = []BrowserBookmark{}
 	}
@@ -148,8 +121,8 @@ func normalizeConfig(config *Config) {
 	if config.Browser.Profiles == nil {
 		config.Browser.Profiles = []BrowserProfileConfig{}
 	}
-	if config.ProxyCheck.BridgeStartTimeoutMs <= 0 {
-		config.ProxyCheck.BridgeStartTimeoutMs = defaultConfig.ProxyCheck.BridgeStartTimeoutMs
+	if config.ProxyCheck.PrepareTimeoutMs <= 0 {
+		config.ProxyCheck.PrepareTimeoutMs = defaultConfig.ProxyCheck.PrepareTimeoutMs
 	}
 	if strings.TrimSpace(config.ProxyCheck.SpeedTargetID) == "" {
 		config.ProxyCheck.SpeedTargetID = defaultConfig.ProxyCheck.SpeedTargetID
@@ -224,13 +197,12 @@ func DefaultConfig() *Config {
 			RestoreLastSession:     false,
 			StartReadyTimeoutMs:    3000,
 			StartStableWindowMs:    1200,
-			DefaultConnectorType:   BrowserConnectorXray,
 		},
 		ProxyCheck: ProxyCheckConfig{
-			BridgeStartTimeoutMs: 15000,
-			SpeedTargetID:        "",
-			IPHealthTargetID:     "",
-			Targets:              []ProxyCheckTarget{},
+			PrepareTimeoutMs: 15000,
+			SpeedTargetID:    "",
+			IPHealthTargetID: "",
+			Targets:          []ProxyCheckTarget{},
 		},
 		Logging: LoggingConfig{
 			Level:           "info",

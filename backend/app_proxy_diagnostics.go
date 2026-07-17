@@ -6,21 +6,16 @@ import (
 	"time"
 )
 
-// BrowserProxyBuildDiagnostic 构建代理桥接诊断信息，不启动代理进程。
 func (a *App) BrowserProxyBuildDiagnostic(proxyId string, proxyConfig string) ProxyBuildDiagnostic {
 	proxies := a.getLatestProxies()
-	return proxy.BuildProxyDiagnostic(proxyConfig, proxies, proxyId, proxy.BuildDiagnosticOptions{
-		XrayMgr:    a.xrayMgr,
-		SingBoxMgr: a.singboxMgr,
-	})
+	return proxy.BuildProxyDiagnostic(proxyConfig, proxies, proxyId)
 }
 
-// BrowserProxyProbeBrowserPage 运行浏览器式并发探测，用于诊断真实页面并发访问效果。
 func (a *App) BrowserProxyProbeBrowserPage(request ProxyBrowserProbeRequest) ProxyBrowserProbeResult {
 	request.ProxyId = strings.TrimSpace(request.ProxyId)
 	proxies := a.getLatestProxies()
 	cfg := buildProxyBrowserProbeConfig(request)
-	result := proxy.ProbeBrowserPageConnectivity(request.ProxyId, proxies, a.xrayMgr, a.singboxMgr, &cfg)
+	result := proxy.ProbeBrowserPageConnectivity(request.ProxyId, proxies, &cfg)
 	return ProxyBrowserProbeResult{
 		ProxyId:     result.ProxyId,
 		Ok:          result.Ok,

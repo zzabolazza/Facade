@@ -131,23 +131,16 @@ export function BrowserProxyBatchCheckIPHealth(arg1:Array<string>,arg2:number):P
 
 export function BrowserProxyBatchTestSpeed(arg1:Array<string>,arg2:number):Promise<Array<backend.ProxyTestResult>>;
 
-export function BrowserProxyBatchWarmupBridge(arg1:Array<string>,arg2:number):Promise<Array<backend.ProxyBridgeWarmupResult>>;
 
 export function BrowserProxyBuildDiagnostic(arg1:string,arg2:string):Promise<proxy.ProxyBuildDiagnostic>;
 
 export function BrowserProxyCheckIPHealth(arg1:string):Promise<backend.ProxyIPHealthResult>;
 
-export function BrowserProxyCoreDownload(arg1:backend.ProxyCoreDownloadRequest):Promise<void>;
 
-export function BrowserProxyCoreDownloadInfo(arg1:backend.ProxyCoreDownloadRequest):Promise<backend.ProxyCoreDownloadInfoResult>;
 
-export function BrowserProxyCoreOpenLocal(arg1:backend.ProxyCoreDownloadRequest):Promise<void>;
 
-export function BrowserProxyCoreStatus(arg1:backend.ProxyCoreDownloadRequest):Promise<backend.ProxyCoreStatusResult>;
 
-export function BrowserProxyFetchClashByURL(arg1:string):Promise<Record<string, any>>;
 
-export function BrowserProxyFetchClashByURLWithProxy(arg1:string,arg2:string):Promise<Record<string, any>>;
 
 export function BrowserProxyList():Promise<Array<config.BrowserProxy>>;
 
@@ -161,9 +154,7 @@ export function BrowserProxyResolveLocation(arg1:string):Promise<backend.ProxyLo
 
 export function BrowserProxyTestSpeed(arg1:string):Promise<backend.ProxyTestResult>;
 
-export function BrowserProxyWarmupBridge(arg1:string):Promise<backend.ProxyBridgeWarmupResult>;
 
-export function BrowserProxyWarmupBridgeWithConfig(arg1:string,arg2:string):Promise<backend.ProxyBridgeWarmupResult>;
 
 export function BrowserRenameTag(arg1:string,arg2:string):Promise<void>;
 

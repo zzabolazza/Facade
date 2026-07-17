@@ -18,14 +18,15 @@ function resolveDirectProxyName(
   server: string,
   port: number,
   index: number,
-  prefix: string,
 ): string {
   const name = rawName.trim()
+  if (scheme === 'direct') {
+    return name || '直连（不走代理）'
+  }
   const fallbackName = server
     ? `${scheme.toUpperCase()}-${server}${port > 0 ? `:${port}` : ''}`
     : `新建代理 ${index + 1}`
-  const finalName = name || fallbackName
-  return prefix ? `${prefix}-${finalName}` : finalName
+  return name || fallbackName
 }
 
 function formatDirectProxyHost(raw: string): string {
@@ -39,22 +40,32 @@ function formatDirectProxyHost(raw: string): string {
 
 function normalizeDirectProtocol(raw: unknown): DirectImportForm['protocol'] {
   const protocol = String(raw || '').trim().toLowerCase()
-  if (protocol === 'http' || protocol === 'https' || protocol === 'socks5') {
+  if (protocol === 'direct' || protocol === 'http' || protocol === 'https' || protocol === 'socks5') {
     return protocol
   }
   if (protocol === 'socks' || protocol === 'socket') {
     return 'socks5'
   }
-  throw new Error('protocol 仅支持 http / https / socks5')
+  throw new Error('protocol 仅支持 direct / http / https / socks5')
 }
 
-function parseDirectProxyURL(raw: string): DirectImportForm {
+export function parseDirectProxyURL(raw: string): DirectImportForm {
   const normalized = normalizeDirectProxyConfig(raw)
   if (!normalized) {
     throw new Error('请输入标准代理地址')
   }
+  if (/^direct:\/\//i.test(normalized)) {
+    return {
+      proxyName: '',
+      protocol: 'direct',
+      server: '',
+      port: '',
+      username: '',
+      password: '',
+    }
+  }
   if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(normalized)) {
-    throw new Error('单行文本需要包含协议头，需要包含协议头')
+    throw new Error('单行文本需要包含协议头')
   }
 
   let parsedURL: URL
@@ -85,7 +96,29 @@ function parseDirectProxyURL(raw: string): DirectImportForm {
   }
 }
 
+export function formFromProxyConfig(proxyName: string, proxyConfig: string): DirectImportForm {
+  if (!proxyConfig.trim() || proxyConfig.trim() === 'direct://') {
+    return {
+      proxyName,
+      protocol: 'direct',
+      server: '',
+      port: '',
+      username: '',
+      password: '',
+    }
+  }
+  const parsed = parseDirectProxyURL(proxyConfig)
+  return { ...parsed, proxyName: proxyName || parsed.proxyName }
+}
+
 export function buildDirectImportCandidate(form: DirectImportForm): ImportCandidate {
+  if (form.protocol === 'direct') {
+    return {
+      proxyName: resolveDirectProxyName(form.proxyName, 'direct', '', 0, 0),
+      proxyConfig: 'direct://',
+    }
+  }
+
   const serverInput = form.server.trim()
   if (!serverInput) {
     throw new Error('请输入代理地址')
@@ -133,7 +166,7 @@ export function buildDirectImportCandidate(form: DirectImportForm): ImportCandid
   const normalizedServer = parsedURL.hostname.replace(/^\[(.*)\]$/, '$1')
 
   return {
-    proxyName: resolveDirectProxyName(form.proxyName, form.protocol, normalizedServer, port, 0, ''),
+    proxyName: resolveDirectProxyName(form.proxyName, form.protocol, normalizedServer, port, 0),
     proxyConfig: normalizedConfig,
   }
 }
@@ -159,6 +192,20 @@ function parseDirectImportObject(payload: Record<string, unknown>, fallbackGroup
   }
 
   const protocol = normalizeDirectProtocol(payload.protocol ?? payload.scheme)
+  if (protocol === 'direct') {
+    return {
+      form: {
+        proxyName: proxyName || '直连（不走代理）',
+        protocol: 'direct',
+        server: '',
+        port: '',
+        username: '',
+        password: '',
+      },
+      groupName,
+    }
+  }
+
   const server = String(payload.server ?? payload.host ?? '').trim()
   if (!server) {
     throw new Error('JSON 缺少 server')

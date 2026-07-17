@@ -1,18 +1,16 @@
-import { Button, FormItem, Input, Modal, Select, Table, Textarea } from '../../../../shared/components'
-import type { TableColumn } from '../../../../shared/components/Table'
+import { Button, FormItem, Input, Modal, Select } from '../../../../shared/components'
 import type { ProxyIPHealthResult } from '../../types'
-
-import {
-  type ChainImportForm,
-  type ProxyDisplayInfo,
-  type ProxyImportMode,
-} from './helpers'
+import { DIRECT_PROXY_PROTOCOL_OPTIONS, type DirectImportForm, type ProxyDisplayInfo } from './helpers'
+import type { TableColumn } from '../../../../shared/components/Table'
+import { Table } from '../../../../shared/components'
 
 export interface ProxyEditFormValue {
   proxyName: string
-  proxyConfig: string
-  preferredKernel: string
-  dnsServers: string
+  protocol: DirectImportForm['protocol']
+  server: string
+  port: string
+  username: string
+  password: string
   groupName: string
 }
 
@@ -20,8 +18,6 @@ export { ProxyPoolImportModal } from './ProxyPoolImportModal'
 
 interface ProxyPoolPreviewModalProps {
   open: boolean
-  importMode: ProxyImportMode
-  importDnsServers: string
   previewList: ProxyDisplayInfo[]
   removedPreviewProxyNames: string[]
   importing: boolean
@@ -33,8 +29,6 @@ interface ProxyPoolPreviewModalProps {
 
 export function ProxyPoolPreviewModal({
   open,
-  importMode,
-  importDnsServers,
   previewList,
   removedPreviewProxyNames,
   importing,
@@ -78,13 +72,8 @@ export function ProxyPoolPreviewModal({
       }
     >
       <div className="space-y-3">
-        {importMode === 'clash' && importDnsServers.trim() && (
-          <p className="text-xs text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] px-3 py-2 rounded">
-            已配置批量 DNS，将应用到以下所有代理
-          </p>
-        )}
         <p className="text-xs text-[var(--color-text-muted)]">
-          保留 {previewList.length} 条，删除 {removedPreviewProxyNames.length} 条。删除项不会进入后续比较环节。
+          保留 {previewList.length} 条，删除 {removedPreviewProxyNames.length} 条。
         </p>
         <Table columns={previewColumns} data={previewList} rowKey="proxyId" maxHeight="380px" emptyText="无代理数据" />
       </div>
@@ -97,13 +86,9 @@ interface ProxyPoolEditModalProps {
   saving: boolean
   groups: string[]
   editForm: ProxyEditFormValue
-  chainEditMode: boolean
-  chainEditForm: ChainImportForm
   onClose: () => void
   onSave: () => void
   onChange: (patch: Partial<ProxyEditFormValue>) => void
-  onChainEditFormChange: (patch: Partial<ChainImportForm>) => void
-  onChainEditHopChange: (hop: 'first' | 'second', field: keyof ChainImportForm['first'], value: string) => void
 }
 
 export function ProxyPoolEditModal({
@@ -111,14 +96,12 @@ export function ProxyPoolEditModal({
   saving,
   groups,
   editForm,
-  chainEditMode,
-  chainEditForm,
   onClose,
   onSave,
   onChange,
-  onChainEditFormChange,
-  onChainEditHopChange,
 }: ProxyPoolEditModalProps) {
+  const isDirect = editForm.protocol === 'direct'
+
   return (
     <Modal
       open={open}
@@ -137,16 +120,17 @@ export function ProxyPoolEditModal({
       }
     >
       <div className="space-y-4">
+        <FormItem label="协议类型" required>
+          <Select
+            value={editForm.protocol}
+            onChange={(event) => onChange({ protocol: event.target.value as ProxyEditFormValue['protocol'] })}
+            options={[...DIRECT_PROXY_PROTOCOL_OPTIONS]}
+          />
+        </FormItem>
         <FormItem label="代理名称" required>
           <Input
-            value={chainEditMode ? chainEditForm.proxyName : editForm.proxyName}
-            onChange={(event) => {
-              if (chainEditMode) {
-                onChainEditFormChange({ proxyName: event.target.value })
-                return
-              }
-              onChange({ proxyName: event.target.value })
-            }}
+            value={editForm.proxyName}
+            onChange={(event) => onChange({ proxyName: event.target.value })}
             placeholder="节点名称"
           />
         </FormItem>
@@ -163,135 +147,38 @@ export function ProxyPoolEditModal({
             ))}
           </datalist>
         </FormItem>
-        <FormItem label="代理内核">
-          <Select
-            value={editForm.preferredKernel || 'auto'}
-            onChange={(event) => onChange({ preferredKernel: event.target.value })}
-            options={[
-              { value: 'auto', label: '自动' },
-              { value: 'xray', label: 'Xray' },
-              { value: 'sing-box', label: 'sing-box' },
-              { value: 'mihomo', label: 'Mihomo' },
-            ]}
-          />
-        </FormItem>
-        {chainEditMode ? (
-          <div className="space-y-4">
-            <FormItem label="本地监听端口（可选）">
+        {!isDirect && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FormItem label="服务器" required>
+              <Input
+                value={editForm.server}
+                onChange={(event) => onChange({ server: event.target.value })}
+              />
+            </FormItem>
+            <FormItem label="端口" required>
               <Input
                 type="number"
                 min={1}
                 max={65535}
-                value={chainEditForm.localPort}
-                onChange={(event) => onChainEditFormChange({ localPort: event.target.value })}
-                placeholder="留空自动分配"
+                value={editForm.port}
+                onChange={(event) => onChange({ port: event.target.value })}
               />
             </FormItem>
-            <div className="rounded-md border border-[var(--color-border)] p-3 space-y-3">
-              <h4 className="text-sm font-medium text-[var(--color-text-primary)]">第一层代理</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormItem label="协议">
-                  <Select
-                    value={chainEditForm.first.protocol}
-                    onChange={(event) => onChainEditHopChange('first', 'protocol', event.target.value)}
-                    options={[
-                      { value: 'http', label: 'HTTP' },
-                      { value: 'socks5', label: 'SOCKS5' },
-                    ]}
-                  />
-                </FormItem>
-                <FormItem label="代理地址" required>
-                  <Input
-                    value={chainEditForm.first.server}
-                    onChange={(event) => onChainEditHopChange('first', 'server', event.target.value)}
-                  />
-                </FormItem>
-                <FormItem label="代理端口" required>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={65535}
-                    value={chainEditForm.first.port}
-                    onChange={(event) => onChainEditHopChange('first', 'port', event.target.value)}
-                  />
-                </FormItem>
-                <FormItem label="账号（可选）">
-                  <Input
-                    value={chainEditForm.first.username}
-                    onChange={(event) => onChainEditHopChange('first', 'username', event.target.value)}
-                  />
-                </FormItem>
-                <FormItem label="密码（可选）">
-                  <Input
-                    type="password"
-                    value={chainEditForm.first.password}
-                    onChange={(event) => onChainEditHopChange('first', 'password', event.target.value)}
-                  />
-                </FormItem>
-              </div>
-            </div>
-            <div className="rounded-md border border-[var(--color-border)] p-3 space-y-3">
-              <h4 className="text-sm font-medium text-[var(--color-text-primary)]">第二层代理</h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormItem label="协议">
-                  <Select
-                    value={chainEditForm.second.protocol}
-                    onChange={(event) => onChainEditHopChange('second', 'protocol', event.target.value)}
-                    options={[
-                      { value: 'http', label: 'HTTP' },
-                      { value: 'socks5', label: 'SOCKS5' },
-                    ]}
-                  />
-                </FormItem>
-                <FormItem label="代理地址" required>
-                  <Input
-                    value={chainEditForm.second.server}
-                    onChange={(event) => onChainEditHopChange('second', 'server', event.target.value)}
-                  />
-                </FormItem>
-                <FormItem label="代理端口" required>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={65535}
-                    value={chainEditForm.second.port}
-                    onChange={(event) => onChainEditHopChange('second', 'port', event.target.value)}
-                  />
-                </FormItem>
-                <FormItem label="账号（可选）">
-                  <Input
-                    value={chainEditForm.second.username}
-                    onChange={(event) => onChainEditHopChange('second', 'username', event.target.value)}
-                  />
-                </FormItem>
-                <FormItem label="密码（可选）">
-                  <Input
-                    type="password"
-                    value={chainEditForm.second.password}
-                    onChange={(event) => onChainEditHopChange('second', 'password', event.target.value)}
-                  />
-                </FormItem>
-              </div>
-            </div>
+            <FormItem label="账号（可选）">
+              <Input
+                value={editForm.username}
+                onChange={(event) => onChange({ username: event.target.value })}
+              />
+            </FormItem>
+            <FormItem label="密码（可选）">
+              <Input
+                type="password"
+                value={editForm.password}
+                onChange={(event) => onChange({ password: event.target.value })}
+              />
+            </FormItem>
           </div>
-        ) : (
-          <FormItem label="代理配置">
-            <Textarea
-              value={editForm.proxyConfig}
-              onChange={(event) => onChange({ proxyConfig: event.target.value })}
-              rows={10}
-              placeholder="支持 Clash YAML、http://、https://、socks5://、chain+socks5://"
-            />
-          </FormItem>
         )}
-        <FormItem label="DNS 服务器（可选）">
-          <Textarea
-            value={editForm.dnsServers}
-            onChange={(event) => onChange({ dnsServers: event.target.value })}
-            rows={6}
-            placeholder={`dns:\n  enable: true\n  nameserver:\n    - 119.29.29.29\n    - 223.5.5.5`}
-          />
-        </FormItem>
       </div>
     </Modal>
   )

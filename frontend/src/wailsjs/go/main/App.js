@@ -246,9 +246,6 @@ export function BrowserProxyBatchTestSpeed(arg1, arg2) {
   return window['go']['main']['App']['BrowserProxyBatchTestSpeed'](arg1, arg2);
 }
 
-export function BrowserProxyBatchWarmupBridge(arg1, arg2) {
-  return window['go']['main']['App']['BrowserProxyBatchWarmupBridge'](arg1, arg2);
-}
 
 export function BrowserProxyBuildDiagnostic(arg1, arg2) {
   return window['go']['main']['App']['BrowserProxyBuildDiagnostic'](arg1, arg2);
@@ -258,29 +255,11 @@ export function BrowserProxyCheckIPHealth(arg1) {
   return window['go']['main']['App']['BrowserProxyCheckIPHealth'](arg1);
 }
 
-export function BrowserProxyCoreDownload(arg1) {
-  return window['go']['main']['App']['BrowserProxyCoreDownload'](arg1);
-}
 
-export function BrowserProxyCoreDownloadInfo(arg1) {
-  return window['go']['main']['App']['BrowserProxyCoreDownloadInfo'](arg1);
-}
 
-export function BrowserProxyCoreOpenLocal(arg1) {
-  return window['go']['main']['App']['BrowserProxyCoreOpenLocal'](arg1);
-}
 
-export function BrowserProxyCoreStatus(arg1) {
-  return window['go']['main']['App']['BrowserProxyCoreStatus'](arg1);
-}
 
-export function BrowserProxyFetchClashByURL(arg1) {
-  return window['go']['main']['App']['BrowserProxyFetchClashByURL'](arg1);
-}
 
-export function BrowserProxyFetchClashByURLWithProxy(arg1, arg2) {
-  return window['go']['main']['App']['BrowserProxyFetchClashByURLWithProxy'](arg1, arg2);
-}
 
 export function BrowserProxyList() {
   return window['go']['main']['App']['BrowserProxyList']();
@@ -306,13 +285,7 @@ export function BrowserProxyTestSpeed(arg1) {
   return window['go']['main']['App']['BrowserProxyTestSpeed'](arg1);
 }
 
-export function BrowserProxyWarmupBridge(arg1) {
-  return window['go']['main']['App']['BrowserProxyWarmupBridge'](arg1);
-}
 
-export function BrowserProxyWarmupBridgeWithConfig(arg1, arg2) {
-  return window['go']['main']['App']['BrowserProxyWarmupBridgeWithConfig'](arg1, arg2);
-}
 
 export function BrowserRenameTag(arg1, arg2) {
   return window['go']['main']['App']['BrowserRenameTag'](arg1, arg2);

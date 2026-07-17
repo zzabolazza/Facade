@@ -9,5 +9,4 @@ export {
   ProxyPoolPage,
   CoreManagementPage,
   BookmarkSettingsPage,
-  LaunchApiDocsPage,
 } from './pages'

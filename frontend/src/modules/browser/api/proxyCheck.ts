@@ -1,9 +1,9 @@
-﻿import type { ProxyCheckSettings } from '../types'
+import type { ProxyCheckSettings } from '../types'
 import { getBindings } from './runtime'
 
 export function createDefaultProxyCheckSettings(): ProxyCheckSettings {
   return {
-    bridgeStartTimeoutMs: 15000,
+    prepareTimeoutMs: 15000,
     speedTargetId: '',
     ipHealthTargetId: '',
     targets: [],

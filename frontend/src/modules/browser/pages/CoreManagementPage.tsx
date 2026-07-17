@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { FolderOpen } from 'lucide-react'
 import { Badge, Button, Card, ConfirmModal, Table, toast } from '../../../shared/components'
 import type { TableColumn } from '../../../shared/components/Table'
@@ -35,7 +35,6 @@ export function CoreManagementPage() {
     restoreLastSession: false,
     startReadyTimeoutMs: 3000,
     startStableWindowMs: 1200,
-    defaultConnectorType: 'xray',
   })
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
   const [settingsForm, setSettingsForm] = useState<CoreSettingsForm>({
@@ -309,7 +308,6 @@ export function CoreManagementPage() {
         restoreLastSession: settingsForm.restoreLastSession,
         startReadyTimeoutMs: Math.max(1000, Number(settingsForm.startReadyTimeoutMs) || 3000),
         startStableWindowMs: Math.max(0, Number(settingsForm.startStableWindowMs) || 1200),
-        defaultConnectorType: settings.defaultConnectorType || 'xray',
       }
       await saveBrowserSettings(newSettings)
       setSettings(newSettings)

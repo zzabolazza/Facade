@@ -574,8 +574,6 @@ func (a *App) prepareProfileProxyForPackage(profile *browser.Profile) {
 	}
 	profile.ProxyId = ""
 	profile.ProxyConfig = ""
-	profile.ProxyBindSourceID = ""
-	profile.ProxyBindSourceURL = ""
 	profile.ProxyBindName = proxyName
 	profile.ProxyBindUpdatedAt = ""
 }
@@ -587,8 +585,6 @@ func (a *App) applyImportedProfileProxyByName(profile *browser.Profile) string {
 	proxyName := strings.TrimSpace(profile.ProxyBindName)
 	profile.ProxyId = ""
 	profile.ProxyConfig = ""
-	profile.ProxyBindSourceID = ""
-	profile.ProxyBindSourceURL = ""
 	profile.ProxyBindUpdatedAt = ""
 	if proxyName == "" {
 		profile.ProxyBindName = ""

@@ -28,12 +28,9 @@ func NewSQLiteProxyDAO(db *sql.DB) *SQLiteProxyDAO {
 	return &SQLiteProxyDAO{db: db}
 }
 
-// List 查询所有代理，按 sort_order 升序
 func (d *SQLiteProxyDAO) List() ([]Proxy, error) {
 	rows, err := d.db.Query(`
-		SELECT proxy_id, proxy_name, proxy_config, COALESCE(preferred_kernel, ''), dns_servers, COALESCE(group_name, ''),
-		       COALESCE(source_id, ''), COALESCE(source_url, ''), COALESCE(source_name_prefix, ''),
-		       COALESCE(source_auto_refresh, 0), COALESCE(source_refresh_interval_m, 0), COALESCE(source_last_refresh_at, ''),
+		SELECT proxy_id, proxy_name, proxy_config, COALESCE(group_name, ''),
 		       COALESCE(last_latency_ms, -1), COALESCE(last_test_ok, 0), COALESCE(last_tested_at, ''),
 		       COALESCE(last_ip_health_json, ''),
 		       sort_order
@@ -45,12 +42,9 @@ func (d *SQLiteProxyDAO) List() ([]Proxy, error) {
 	return scanProxies(rows)
 }
 
-// ListByGroup 按分组名称查询代理
 func (d *SQLiteProxyDAO) ListByGroup(groupName string) ([]Proxy, error) {
 	rows, err := d.db.Query(`
-		SELECT proxy_id, proxy_name, proxy_config, COALESCE(preferred_kernel, ''), dns_servers, COALESCE(group_name, ''),
-		       COALESCE(source_id, ''), COALESCE(source_url, ''), COALESCE(source_name_prefix, ''),
-		       COALESCE(source_auto_refresh, 0), COALESCE(source_refresh_interval_m, 0), COALESCE(source_last_refresh_at, ''),
+		SELECT proxy_id, proxy_name, proxy_config, COALESCE(group_name, ''),
 		       COALESCE(last_latency_ms, -1), COALESCE(last_test_ok, 0), COALESCE(last_tested_at, ''),
 		       COALESCE(last_ip_health_json, ''),
 		       sort_order
@@ -63,7 +57,6 @@ func (d *SQLiteProxyDAO) ListByGroup(groupName string) ([]Proxy, error) {
 	return scanProxies(rows)
 }
 
-// ListGroups 获取所有非空分组名称（去重）
 func (d *SQLiteProxyDAO) ListGroups() ([]string, error) {
 	rows, err := d.db.Query(`
 		SELECT DISTINCT group_name FROM browser_proxies
@@ -84,35 +77,20 @@ func (d *SQLiteProxyDAO) ListGroups() ([]string, error) {
 	return groups, rows.Err()
 }
 
-// Upsert 新增或更新代理
 func (d *SQLiteProxyDAO) Upsert(proxy Proxy) error {
 	now := time.Now().Format(time.RFC3339)
-	autoRefreshInt := 0
-	if proxy.SourceAutoRefresh {
-		autoRefreshInt = 1
-	}
 	_, err := d.db.Exec(`
 		INSERT INTO browser_proxies (
-		  proxy_id, proxy_name, proxy_config, preferred_kernel, dns_servers, group_name,
-		  source_id, source_url, source_name_prefix, source_auto_refresh, source_refresh_interval_m, source_last_refresh_at,
+		  proxy_id, proxy_name, proxy_config, group_name,
 		  sort_order, created_at
 		)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?)
 		ON CONFLICT(proxy_id) DO UPDATE SET
 		  proxy_name   = excluded.proxy_name,
 		  proxy_config = excluded.proxy_config,
-		  preferred_kernel = excluded.preferred_kernel,
-		  dns_servers  = excluded.dns_servers,
 		  group_name   = excluded.group_name,
-		  source_id    = excluded.source_id,
-		  source_url   = excluded.source_url,
-		  source_name_prefix = excluded.source_name_prefix,
-		  source_auto_refresh = excluded.source_auto_refresh,
-		  source_refresh_interval_m = excluded.source_refresh_interval_m,
-		  source_last_refresh_at = excluded.source_last_refresh_at,
 		  sort_order   = excluded.sort_order`,
-		proxy.ProxyId, proxy.ProxyName, proxy.ProxyConfig, proxy.PreferredKernel, proxy.DnsServers, proxy.GroupName,
-		proxy.SourceID, proxy.SourceURL, proxy.SourceNamePrefix, autoRefreshInt, proxy.SourceRefreshIntervalM, proxy.SourceLastRefreshAt,
+		proxy.ProxyId, proxy.ProxyName, proxy.ProxyConfig, proxy.GroupName,
 		proxy.SortOrder, now,
 	)
 	if err != nil {
@@ -121,7 +99,6 @@ func (d *SQLiteProxyDAO) Upsert(proxy Proxy) error {
 	return nil
 }
 
-// Delete 删除单个代理
 func (d *SQLiteProxyDAO) Delete(proxyId string) error {
 	_, err := d.db.Exec(`DELETE FROM browser_proxies WHERE proxy_id = ?`, proxyId)
 	if err != nil {
@@ -130,7 +107,6 @@ func (d *SQLiteProxyDAO) Delete(proxyId string) error {
 	return nil
 }
 
-// DeleteAll 清空代理表（批量保存前使用）
 func (d *SQLiteProxyDAO) DeleteAll() error {
 	_, err := d.db.Exec(`DELETE FROM browser_proxies`)
 	if err != nil {
@@ -139,7 +115,6 @@ func (d *SQLiteProxyDAO) DeleteAll() error {
 	return nil
 }
 
-// UpdateSpeedResult 更新单个代理的测速结果
 func (d *SQLiteProxyDAO) UpdateSpeedResult(proxyId string, ok bool, latencyMs int64, testedAt string) error {
 	okInt := 0
 	if ok {
@@ -154,7 +129,6 @@ func (d *SQLiteProxyDAO) UpdateSpeedResult(proxyId string, ok bool, latencyMs in
 	return nil
 }
 
-// UpdateIPHealthResult 更新单个代理的 IP 健康检测结果（JSON 字符串）
 func (d *SQLiteProxyDAO) UpdateIPHealthResult(proxyId string, healthJSON string) error {
 	_, err := d.db.Exec(`
 		UPDATE browser_proxies SET last_ip_health_json=?
@@ -170,16 +144,13 @@ func scanProxies(rows *sql.Rows) ([]Proxy, error) {
 	for rows.Next() {
 		var p Proxy
 		var okInt int
-		var autoRefreshInt int
 		if err := rows.Scan(
-			&p.ProxyId, &p.ProxyName, &p.ProxyConfig, &p.PreferredKernel, &p.DnsServers, &p.GroupName,
-			&p.SourceID, &p.SourceURL, &p.SourceNamePrefix, &autoRefreshInt, &p.SourceRefreshIntervalM, &p.SourceLastRefreshAt,
+			&p.ProxyId, &p.ProxyName, &p.ProxyConfig, &p.GroupName,
 			&p.LastLatencyMs, &okInt, &p.LastTestedAt, &p.LastIPHealthJSON, &p.SortOrder,
 		); err != nil {
 			return nil, fmt.Errorf("读取代理行失败: %w", err)
 		}
 		p.LastTestOk = okInt == 1
-		p.SourceAutoRefresh = autoRefreshInt == 1
 		list = append(list, p)
 	}
 	return list, rows.Err()

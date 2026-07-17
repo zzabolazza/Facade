@@ -41,12 +41,10 @@ type BrowserPageProbeResult struct {
 func ProbeBrowserPageConnectivity(
 	proxyId string,
 	proxies []config.BrowserProxy,
-	xrayMgr *XrayManager,
-	singboxMgr *SingBoxManager,
 	cfg *BrowserPageProbeConfig,
 ) BrowserPageProbeResult {
 	normalized := normalizeBrowserPageProbeConfig(cfg)
-	client, err := buildProxyHTTPClient("", proxyId, proxies, xrayMgr, singboxMgr, nil, config.BrowserConnectorXray, normalized.Timeout)
+	client, err := buildProxyHTTPClient("", proxyId, proxies, normalized.Timeout)
 	if err != nil {
 		return BrowserPageProbeResult{ProxyId: proxyId, Ok: false, Error: err.Error(), Concurrency: normalized.Concurrency}
 	}
@@ -78,92 +76,87 @@ func normalizeBrowserPageProbeConfig(cfg *BrowserPageProbeConfig) BrowserPagePro
 }
 
 func runBrowserPageProbe(proxyId string, client *http.Client, cfg BrowserPageProbeConfig) BrowserPageProbeResult {
-	startedAt := time.Now()
-	latencies := make([]int64, 0, cfg.Concurrency)
-	var totalBytes int64
-	var firstError string
-	var failed int
-	var mu sync.Mutex
-	var wg sync.WaitGroup
-
-	for i := 0; i < cfg.Concurrency; i++ {
-		url := cfg.URLs[i%len(cfg.URLs)]
-		wg.Add(1)
-		go func(targetURL string) {
-			defer wg.Done()
-			requestStartedAt := time.Now()
-			resp, err := client.Get(targetURL)
-			latencyMs := time.Since(requestStartedAt).Milliseconds()
-			if err != nil {
-				mu.Lock()
-				failed++
-				if firstError == "" {
-					firstError = err.Error()
-				}
-				mu.Unlock()
-				return
-			}
-			defer resp.Body.Close()
-			bytesRead, readErr := io.Copy(io.Discard, resp.Body)
-			mu.Lock()
-			defer mu.Unlock()
-			if readErr != nil || resp.StatusCode >= http.StatusBadRequest {
-				failed++
-				if firstError == "" {
-					if readErr != nil {
-						firstError = readErr.Error()
-					} else {
-						firstError = resp.Status
-					}
-				}
-				return
-			}
-			latencies = append(latencies, latencyMs)
-			totalBytes += bytesRead
-		}(url)
+	type probeItem struct {
+		ok      bool
+		elapsed time.Duration
+		bytes   int64
 	}
-	wg.Wait()
 
-	completed := len(latencies)
+	jobs := make(chan string, len(cfg.URLs))
+	results := make(chan probeItem, len(cfg.URLs))
+	var wg sync.WaitGroup
+	workers := cfg.Concurrency
+	if workers > len(cfg.URLs) {
+		workers = len(cfg.URLs)
+	}
+	if workers < 1 {
+		workers = 1
+	}
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for target := range jobs {
+				start := time.Now()
+				resp, err := client.Get(target)
+				elapsed := time.Since(start)
+				if err != nil {
+					results <- probeItem{ok: false, elapsed: elapsed}
+					continue
+				}
+				n, _ := io.Copy(io.Discard, resp.Body)
+				_ = resp.Body.Close()
+				ok := resp.StatusCode >= 200 && resp.StatusCode < 400
+				results <- probeItem{ok: ok, elapsed: elapsed, bytes: n}
+			}
+		}()
+	}
+	for _, u := range cfg.URLs {
+		jobs <- u
+	}
+	close(jobs)
+	wg.Wait()
+	close(results)
+
+	var completed, failed int
+	var totalBytes int64
+	var totalMs int64
+	latencies := make([]int64, 0, len(cfg.URLs))
+	for item := range results {
+		totalMs += item.elapsed.Milliseconds()
+		totalBytes += item.bytes
+		latencies = append(latencies, item.elapsed.Milliseconds())
+		if item.ok {
+			completed++
+		} else {
+			failed++
+		}
+	}
+
 	result := BrowserPageProbeResult{
 		ProxyId:     proxyId,
-		Ok:          completed > 0 && failed == 0,
-		TotalMs:     time.Since(startedAt).Milliseconds(),
+		Ok:          failed == 0 && completed > 0,
+		TotalMs:     totalMs,
 		Bytes:       totalBytes,
 		Completed:   completed,
 		Failed:      failed,
-		Concurrency: cfg.Concurrency,
-		Error:       firstError,
+		Concurrency: workers,
 	}
-	if completed == 0 {
-		if result.Error == "" {
-			result.Error = "并发探测全部失败"
+	if len(latencies) > 0 {
+		sort.Slice(latencies, func(i, j int) bool { return latencies[i] < latencies[j] })
+		sum := int64(0)
+		for _, v := range latencies {
+			sum += v
 		}
-		return result
+		result.AverageMs = sum / int64(len(latencies))
+		idx := int(float64(len(latencies)-1) * 0.95)
+		if idx < 0 {
+			idx = 0
+		}
+		result.P95Ms = latencies[idx]
 	}
-	sort.Slice(latencies, func(i, j int) bool { return latencies[i] < latencies[j] })
-	var sum int64
-	for _, latency := range latencies {
-		sum += latency
+	if !result.Ok && failed > 0 {
+		result.Error = "部分或全部探测失败"
 	}
-	result.AverageMs = sum / int64(completed)
-	result.P95Ms = percentileLatency(latencies, 0.95)
 	return result
-}
-
-func percentileLatency(sortedLatencies []int64, percentile float64) int64 {
-	if len(sortedLatencies) == 0 {
-		return 0
-	}
-	if percentile <= 0 {
-		return sortedLatencies[0]
-	}
-	idx := int(float64(len(sortedLatencies))*percentile + 0.5)
-	if idx < 1 {
-		idx = 1
-	}
-	if idx > len(sortedLatencies) {
-		idx = len(sortedLatencies)
-	}
-	return sortedLatencies[idx-1]
 }

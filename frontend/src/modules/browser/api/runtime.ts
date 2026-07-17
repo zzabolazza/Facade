@@ -1,4 +1,4 @@
-﻿import type { BrowserCore, BrowserProfile, BrowserProxy, BrowserSettings } from '../types'
+import type { BrowserCore, BrowserProfile, BrowserProxy, BrowserSettings } from '../types'
 
 export async function getBindings() {
   try {
@@ -26,7 +26,6 @@ export function createDefaultBrowserSettings(): BrowserSettings {
     restoreLastSession: false,
     startReadyTimeoutMs: 3000,
     startStableWindowMs: 1200,
-    defaultConnectorType: 'xray',
   }
 }
 

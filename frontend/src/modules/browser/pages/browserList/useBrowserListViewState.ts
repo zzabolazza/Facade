@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { BrowserCore, BrowserProfile } from '../../types'
 import { EMPTY_FILTERS, type InstanceFilters } from '../../components/InstanceFilterBar'
 import type { BrowserViewMode } from '../../components/BrowserListLayout'
@@ -150,7 +150,6 @@ function matchesProfileKeyword(profile: BrowserProfile, keyword: string): boolea
     profile.userDataDir,
     profile.proxyId,
     profile.proxyBindName,
-    profile.proxyBindSourceUrl,
     profile.groupId,
     ...(profile.tags || []),
     ...(profile.keywords || []),

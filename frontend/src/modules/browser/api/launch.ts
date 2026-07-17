@@ -6,12 +6,6 @@ export interface LaunchServerInfo {
   preferredPort: number
   baseUrl: string
   ready: boolean
-  apiAuth: {
-    requested: boolean
-    configured: boolean
-    enabled: boolean
-    header: string
-  }
 }
 
 function normalizeLaunchServerInfo(payload: any): LaunchServerInfo {
@@ -21,7 +15,6 @@ function normalizeLaunchServerInfo(payload: any): LaunchServerInfo {
   const fallbackPort = preferredPort > 0 ? preferredPort : 19876
   const effectivePort = port > 0 ? port : fallbackPort
   const baseUrl = String(payload?.baseUrl || (effectivePort > 0 ? `http://${host}:${effectivePort}` : ''))
-  const apiAuthPayload = payload?.apiAuth || {}
 
   return {
     host,
@@ -29,12 +22,6 @@ function normalizeLaunchServerInfo(payload: any): LaunchServerInfo {
     preferredPort,
     baseUrl,
     ready: !!payload?.ready && port > 0,
-    apiAuth: {
-      requested: !!apiAuthPayload?.requested,
-      configured: !!apiAuthPayload?.configured,
-      enabled: !!apiAuthPayload?.enabled,
-      header: String(apiAuthPayload?.header || 'X-Ant-Api-Key'),
-    },
   }
 }
 
@@ -55,11 +42,5 @@ export async function fetchLaunchServerInfo(): Promise<LaunchServerInfo> {
     preferredPort: 19876,
     baseUrl: 'http://127.0.0.1:19876',
     ready: false,
-    apiAuth: {
-      requested: false,
-      configured: false,
-      enabled: false,
-      header: 'X-Ant-Api-Key',
-    },
   }
 }

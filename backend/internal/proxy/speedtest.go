@@ -1,27 +1,17 @@
 package proxy
 
 import (
-	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
-
-	"github.com/metacubex/mihomo/adapter"
-	"github.com/metacubex/mihomo/common/utils"
-	C "github.com/metacubex/mihomo/constant"
 
 	"ant-chrome/backend/internal/config"
 	"ant-chrome/backend/internal/logger"
 )
 
-// ─── Clash 标准测速 URL ───
-// 使用 HTTP 与 Clash 客户端保持一致
-
 const DefaultSpeedTestURL = "http://www.gstatic.com/generate_204"
 
-// SpeedTestConfig 测速参数
 type SpeedTestConfig struct {
 	Timeout        time.Duration
 	TCPTimeout     time.Duration
@@ -34,41 +24,18 @@ var DefaultSpeedTestConfig = SpeedTestConfig{
 	TCPTimeout: 3 * time.Second,
 }
 
-// ─── 对外入口 ───
-
-// SpeedTest 按单个代理的内核决策执行轻量 HTTP 延迟测试。
+// SpeedTest 对原生代理执行轻量 HTTP 延迟测试。
 func SpeedTest(
 	proxyId string,
 	proxies []config.BrowserProxy,
-	xrayMgr *XrayManager,
-	singboxMgr *SingBoxManager,
 	cfg *SpeedTestConfig,
 ) TestResult {
-	return SpeedTestWithConnector(proxyId, proxies, xrayMgr, singboxMgr, nil, config.BrowserConnectorXray, cfg)
+	return lightHTTPDelayTest(proxyId, proxies, cfg)
 }
 
-// SpeedTestWithConnector 保留 connectorType 参数用于旧调用兼容。
-// 实际测速内核由 ResolveProxyKernel 按单个代理决定。
-func SpeedTestWithConnector(
+func lightHTTPDelayTest(
 	proxyId string,
 	proxies []config.BrowserProxy,
-	xrayMgr *XrayManager,
-	singboxMgr *SingBoxManager,
-	clashMgr *ClashManager,
-	connectorType string,
-	cfg *SpeedTestConfig,
-) TestResult {
-	connectorType = config.NormalizeBrowserConnectorType(connectorType)
-	return lightHTTPDelayTestWithConnector(proxyId, proxies, xrayMgr, singboxMgr, clashMgr, connectorType, cfg)
-}
-
-func lightHTTPDelayTestWithConnector(
-	proxyId string,
-	proxies []config.BrowserProxy,
-	xrayMgr *XrayManager,
-	singboxMgr *SingBoxManager,
-	clashMgr *ClashManager,
-	connectorType string,
 	cfg *SpeedTestConfig,
 ) TestResult {
 	log := logger.New("SpeedTest")
@@ -80,27 +47,30 @@ func lightHTTPDelayTestWithConnector(
 
 	src := resolveProxyConfig("", proxies, proxyId)
 	if src == "" {
-		return TestResult{ProxyId: proxyId, Ok: false, Engine: connectorType, Error: "代理配置为空"}
+		return TestResult{ProxyId: proxyId, Ok: false, Engine: "native", Error: "代理配置为空"}
+	}
+	if strings.EqualFold(src, "direct://") {
+		return TestResult{ProxyId: proxyId, Ok: true, LatencyMs: 0, Engine: ProtocolDirect}
 	}
 
-	if strings.ToLower(src) == "direct://" {
-		return TestResult{ProxyId: proxyId, Ok: true, LatencyMs: 0, Engine: "direct"}
+	engine := DetectProxyProtocol(src)
+	if engine == "unknown" {
+		return TestResult{ProxyId: proxyId, Ok: false, Engine: "native", Error: "不支持的代理协议，仅支持 http / https / socks5"}
 	}
 
 	testURLs := speedTestTargetURLs(cfg)
 	if len(testURLs) == 0 {
-		return TestResult{ProxyId: proxyId, Ok: false, Engine: connectorType, Error: "测速目标 URL 为空"}
+		return TestResult{ProxyId: proxyId, Ok: false, Engine: engine, Error: "测速目标 URL 为空"}
 	}
-	engine := speedTestProbeEngine(src, proxies, proxyId, connectorType)
+
 	log.Info("开始代理测速",
 		logger.F("proxy_id", proxyId),
 		logger.F("engine", engine),
 		logger.F("timeout_ms", cfg.Timeout.Milliseconds()),
-		logger.F("tcp_timeout_ms", cfg.TCPTimeout.Milliseconds()),
 		logger.F("targets", strings.Join(testURLs, ",")),
 	)
 
-	client, err := buildSpeedTestHTTPClient(src, proxyId, proxies, xrayMgr, singboxMgr, clashMgr, connectorType, cfg)
+	client, err := buildSpeedTestHTTPClient(src, proxyId, proxies, cfg)
 	if err != nil {
 		log.Warn("代理测速 HTTP 客户端创建失败",
 			logger.F("proxy_id", proxyId),
@@ -146,15 +116,8 @@ func lightHTTPDelayTestWithConnector(
 	}
 
 	if lastErr != nil {
-		log.Warn("代理测速失败",
-			logger.F("proxy_id", proxyId),
-			logger.F("engine", engine),
-			logger.F("latency_ms", lastLatency),
-			logger.F("error", lastErr.Error()),
-		)
 		return TestResult{ProxyId: proxyId, Ok: false, LatencyMs: lastLatency, Engine: engine, Error: lastErr.Error()}
 	}
-	log.Warn("代理测速失败", logger.F("proxy_id", proxyId), logger.F("engine", engine), logger.F("error", "测速失败"))
 	return TestResult{ProxyId: proxyId, Ok: false, LatencyMs: lastLatency, Engine: engine, Error: "测速失败"}
 }
 
@@ -162,10 +125,6 @@ func buildSpeedTestHTTPClient(
 	src string,
 	proxyId string,
 	proxies []config.BrowserProxy,
-	xrayMgr *XrayManager,
-	singboxMgr *SingBoxManager,
-	clashMgr *ClashManager,
-	connectorType string,
 	cfg *SpeedTestConfig,
 ) (*http.Client, error) {
 	timeout := DefaultSpeedTestConfig.Timeout
@@ -188,7 +147,7 @@ func buildSpeedTestHTTPClient(
 	}
 	resultCh := make(chan clientResult, 1)
 	go func() {
-		client, err := buildProxyHTTPClient(src, proxyId, proxies, xrayMgr, singboxMgr, clashMgr, connectorType, timeout)
+		client, err := buildProxyHTTPClient(src, proxyId, proxies, timeout)
 		resultCh <- clientResult{client: client, err: err}
 	}()
 
@@ -202,15 +161,6 @@ func buildSpeedTestHTTPClient(
 	}
 }
 
-func primarySpeedTestURL(cfg *SpeedTestConfig) string {
-	if cfg != nil {
-		if urls := normalizeSpeedTestURLs(cfg.URLs); len(urls) > 0 {
-			return urls[0]
-		}
-	}
-	return strings.TrimSpace(DefaultSpeedTestURL)
-}
-
 func speedTestTargetURLs(cfg *SpeedTestConfig) []string {
 	if cfg != nil {
 		if urls := uniqueSpeedTestURLs(cfg.URLs); len(urls) > 0 {
@@ -220,29 +170,11 @@ func speedTestTargetURLs(cfg *SpeedTestConfig) []string {
 	return []string{DefaultSpeedTestURL}
 }
 
-func speedTestProbeEngine(src string, proxies []config.BrowserProxy, proxyId string, connectorType string) string {
-	resolution, err := ResolveProxyKernelForConnector(src, proxies, proxyId, connectorType)
-	if err != nil {
-		if resolution.Kernel != "" {
-			return resolution.Kernel
-		}
-		return config.NormalizeBrowserConnectorType(connectorType)
-	}
-	if resolution.Kernel == ProxyKernelNative {
-		return "native"
-	}
-	return resolution.Kernel
-}
-
 func doSpeedTestRequest(client *http.Client, testURL string) (int64, int, error) {
 	latency, statusCode, err := doSpeedTestRequestWithMethod(client, http.MethodHead, testURL)
 	if err != nil || statusCode != http.StatusMethodNotAllowed {
 		if err != nil {
 			return latency, statusCode, err
-		}
-		secondLatency, secondStatusCode, secondErr := doSpeedTestRequestWithMethod(client, http.MethodHead, testURL)
-		if secondErr == nil {
-			return secondLatency, secondStatusCode, nil
 		}
 		return latency, statusCode, nil
 	}
@@ -274,48 +206,4 @@ func speedTestStatusOK(statusCode int, cfg *SpeedTestConfig) bool {
 		return false
 	}
 	return isSpeedTestSuccessStatus(statusCode)
-}
-
-func mihomoURLTest(proxyId string, proxyInstance C.Proxy, testURL string, cfg *SpeedTestConfig) TestResult {
-	timeout := DefaultSpeedTestConfig.Timeout
-	if cfg != nil && cfg.Timeout > 0 {
-		timeout = cfg.Timeout
-	}
-
-	expectedStatus, err := speedTestExpectedStatus(cfg)
-	if err != nil {
-		return TestResult{ProxyId: proxyId, Ok: false, Engine: "mihomo", Error: err.Error()}
-	}
-
-	adapter.UnifiedDelay.Store(true)
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	delay, err := proxyInstance.URLTest(ctx, testURL, expectedStatus)
-	latency := int64(delay)
-	if ctx.Err() != nil {
-		return TestResult{ProxyId: proxyId, Ok: false, LatencyMs: latency, Engine: "mihomo", Error: "测速超时"}
-	}
-	if err != nil || delay == 0 {
-		if err != nil {
-			return TestResult{ProxyId: proxyId, Ok: false, LatencyMs: latency, Engine: "mihomo", Error: err.Error()}
-		}
-		return TestResult{ProxyId: proxyId, Ok: false, LatencyMs: latency, Engine: "mihomo", Error: "mihomo 延迟测试无结果"}
-	}
-
-	return TestResult{ProxyId: proxyId, Ok: true, LatencyMs: latency, Engine: "mihomo"}
-}
-
-func speedTestExpectedStatus(cfg *SpeedTestConfig) (utils.IntRanges[uint16], error) {
-	if cfg == nil || len(cfg.ExpectedStatus) == 0 {
-		return nil, nil
-	}
-	items := make([]string, 0, len(cfg.ExpectedStatus))
-	for _, status := range cfg.ExpectedStatus {
-		if status <= 0 || status > 65535 {
-			return nil, fmt.Errorf("无效测速状态码: %d", status)
-		}
-		items = append(items, strconv.Itoa(status))
-	}
-	return utils.NewUnsignedRangesFromList[uint16](items)
 }

@@ -7,7 +7,6 @@ import (
 	"ant-chrome/backend/internal/database"
 	"ant-chrome/backend/internal/launchcode"
 	"ant-chrome/backend/internal/logger"
-	"ant-chrome/backend/internal/proxy"
 	"context"
 	"fmt"
 	"os"
@@ -51,7 +50,6 @@ func (a *App) startup(ctx context.Context) {
 	a.startupInitManagers(cfg, db)
 	a.startupInitLaunchCode(log)
 	a.startupInitLaunchServer(log)
-	a.startupInitBridgeHooks()
 	a.startupInitSpeedScheduler()
 
 	log.Info("应用启动成功")
@@ -119,9 +117,6 @@ func (a *App) startupInitDatabase(cfg *config.Config) (*database.DB, error) {
 
 func (a *App) startupInitManagers(cfg *config.Config, db *database.DB) {
 	a.browserMgr = browser.NewManager(cfg, a.appRoot)
-	a.xrayMgr = proxy.NewXrayManager(cfg, a.appRoot)
-	a.clashMgr = proxy.NewClashManager(cfg, a.appRoot)
-	a.singboxMgr = proxy.NewSingBoxManager(cfg, a.appRoot)
 
 	conn := db.GetConn()
 	a.browserMgr.ProfileDAO = browser.NewSQLiteProfileDAO(conn)
@@ -168,33 +163,11 @@ func (a *App) startupInitLaunchServer(log *logger.Logger) {
 	)
 }
 
-func (a *App) startupInitBridgeHooks() {
-	a.xrayMgr.OnBridgeDied = func(key string, err error) {
-		if a.ctx != nil {
-			runtime.EventsEmit(a.ctx, "proxy:bridge:died", map[string]interface{}{
-				"engine": "xray",
-				"key":    key[:8],
-				"error":  err.Error(),
-			})
-		}
-	}
-	a.singboxMgr.OnBridgeDied = func(key string, err error) {
-		if a.ctx != nil {
-			runtime.EventsEmit(a.ctx, "proxy:bridge:died", map[string]interface{}{
-				"engine": "singbox",
-				"key":    key[:8],
-				"error":  err.Error(),
-			})
-		}
-	}
-}
-
 func (a *App) startupInitSpeedScheduler() {
 	a.speedScheduler = browser.NewProxySpeedScheduler(
 		a.browserMgr.ProxyDAO,
 		func(proxyId string) (bool, int64, string) {
-			connectorType := config.NormalizeBrowserConnectorType(a.config.Browser.DefaultConnectorType)
-			r := a.testProxySpeedWithConnector(proxyId, a.getLatestProxies(), connectorType)
+			r := a.testProxySpeed(proxyId, a.getLatestProxies())
 			return r.Ok, r.LatencyMs, r.Error
 		},
 		5*time.Minute,

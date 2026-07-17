@@ -4,12 +4,10 @@ import type { SortOrder } from '../../../shared/components/Table'
 import type { BrowserProxy, ProxyIPHealthResult } from '../types'
 import { fetchBrowserProxies, fetchBrowserProxyGroups, saveBrowserProxies } from '../api'
 import {
-  buildChainImportCandidate,
-  createInitialChainImportForm,
+  buildDirectImportCandidate,
   ensureBuiltinProxies,
-  toChainImportForm,
+  formFromProxyConfig,
   toDisplayList,
-  type ChainImportForm,
   type ProxyDisplayInfo,
 } from './proxyPool/helpers'
 import {
@@ -22,47 +20,24 @@ import {
 import { ProxyPoolHeader } from './proxyPool/ProxyPoolHeader'
 import { ProxyPoolTableCard } from './proxyPool/ProxyPoolTableCard'
 import { ProxyPoolCheckSettingsModal } from './proxyPool/ProxyPoolCheckSettingsModal'
-import { ProxyCoreDownloadModal } from './proxyPool/ProxyCoreDownloadModal'
-import { useProxySourceRefresh } from './proxyPool/useProxySourceRefresh'
 import { useProxyImportFlow } from './proxyPool/useProxyImportFlow'
 import { useProxyChecks } from './proxyPool/useProxyChecks'
 import { useProxySelection } from './proxyPool/useProxySelection'
 import { useProxyCheckSettingsModal } from './proxyPool/useProxyCheckSettingsModal'
-import { useProxyGlobalRefreshConfig } from './proxyPool/useProxyGlobalRefreshConfig'
 import { useProxyDeleteFlow } from './proxyPool/useProxyDeleteFlow'
-import { useProxyCoreDownload } from './proxyPool/useProxyCoreDownload'
 import { useProxyPoolFilter } from './proxyPool/useProxyPoolFilter'
 
 export function ProxyPoolPage() {
   const [proxies, setProxies] = useState<BrowserProxy[]>([])
   const [displayList, setDisplayList] = useState<ProxyDisplayInfo[]>([])
   const [loading, setLoading] = useState(true)
-  const {
-    coreDownloadOpen,
-    coreDownloadType,
-    setCoreDownloadType,
-    coreDownloadGOOS,
-    setCoreDownloadGOOS,
-    coreDownloadGOARCH,
-    setCoreDownloadGOARCH,
-    coreDownloadProxy,
-    setCoreDownloadProxy,
-    coreDownloadProgress,
-    currentCoreStatus,
-    downloadCoreStatus,
-    downloadCoreStatusLoading,
-    loadBrowserSettings,
-    handleStartCoreDownload,
-    openCoreDownload,
-    closeCoreDownload,
-  } = useProxyCoreDownload()
   const [groups, setGroups] = useState<string[]>([])
 
   const [filterProtocol, setFilterProtocol] = useState<string>('all')
   const [filterKeyword, setFilterKeyword] = useState('')
   const [filterGroup, setFilterGroup] = useState<string>('all')
   const [filterAvailableOnly, setFilterAvailableOnly] = useState(false)
-  const [sortColumn, setSortColumn] = useState<string>('') // 默认不排序
+  const [sortColumn, setSortColumn] = useState<string>('')
   const [sortOrder, setSortOrder] = useState<SortOrder>(undefined)
 
   const {
@@ -77,26 +52,19 @@ export function ProxyPoolPage() {
     saveCheckSettings,
   } = useProxyCheckSettingsModal()
 
-  const {
-    globalAutoRefreshEnabled,
-    setGlobalAutoRefreshEnabled,
-    globalRefreshInterval,
-    globalRefreshIntervalM,
-    setGlobalRefreshIntervalM,
-  } = useProxyGlobalRefreshConfig()
-
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingProxy, setEditingProxy] = useState<BrowserProxy | null>(null)
-  const [chainEditMode, setChainEditMode] = useState(false)
-  const [chainEditForm, setChainEditForm] = useState<ChainImportForm>(() => createInitialChainImportForm())
   const [editForm, setEditForm] = useState<ProxyEditFormValue>({
     proxyName: '',
-    proxyConfig: '',
-    preferredKernel: 'auto',
-    dnsServers: '',
+    protocol: 'http',
+    server: '',
+    port: '',
+    username: '',
+    password: '',
     groupName: '',
   })
   const [saving, setSaving] = useState(false)
+
   const saveProxies = useCallback(async (list: BrowserProxy[]) => {
     await saveBrowserProxies(list)
     setProxies(list)
@@ -106,32 +74,26 @@ export function ProxyPoolPage() {
   }, [])
 
   const {
-    importModalOpen, setImportModalOpen, importMode, importUrl, importFetchProxyId, importResolvedUrl, importText,
-    importDnsServers, importNamePrefix, importGroupName, chainImportText, directImportText,
-    chainImportForm, directImportForm, previewModalOpen, setPreviewModalOpen, previewList, removedPreviewProxyNames,
-    importing, fetchingImportUrl, canParseImport, setImportText, setImportDnsServers,
-    setImportNamePrefix, setImportGroupName, setImportFetchProxyId, setChainImportText, setDirectImportText,
-    setChainImportForm, setDirectImportForm, handleRemovePreviewProxy, updateChainImportHop,
-    handleImportModeChange, handleFillChainTemplate, handleFillDirectTemplate, handleCopyChainTemplate,
-    handleCopyDirectTemplate, handleApplyChainJSON, handleApplyDirectText, handleImportUrlChange,
-    handleFetchImportURL, handleParseImport, handleConfirmImport,
+    importModalOpen,
+    setImportModalOpen,
+    importGroupName,
+    setImportGroupName,
+    directImportText,
+    setDirectImportText,
+    directImportForm,
+    setDirectImportForm,
+    previewModalOpen,
+    setPreviewModalOpen,
+    previewList,
+    removedPreviewProxyNames,
+    importing,
+    canParseImport,
+    handleRemovePreviewProxy,
+    handleApplyDirectText,
+    handleParseImport,
+    handleConfirmImport,
   } = useProxyImportFlow({
     proxies,
-    globalAutoRefreshEnabled,
-    globalRefreshInterval,
-    saveProxies,
-  })
-
-  const {
-    hasURLImportSources,
-    refreshingAllSources,
-    refreshingSourceIds,
-    refreshSingleSource,
-    handleRefreshAllSources,
-  } = useProxySourceRefresh({
-    proxies,
-    globalAutoRefreshEnabled,
-    globalRefreshInterval,
     saveProxies,
   })
 
@@ -143,8 +105,6 @@ export function ProxyPoolPage() {
     ipHealthMap,
     checkingIPHealthIds,
     checkingAllIPHealth,
-    warmingBridgeIds,
-    warmingAllBridges,
     ipHealthDetailOpen,
     setIPHealthDetailOpen,
     currentIPHealthDetail,
@@ -153,8 +113,6 @@ export function ProxyPoolPage() {
     setIPHealthMap,
     handleTestOne,
     handleTestAll,
-    handleWarmupOne,
-    handleWarmupAll,
     handleCheckOneIPHealth,
     handleCheckAllIPHealth,
     openIPHealthDetail,
@@ -167,13 +125,13 @@ export function ProxyPoolPage() {
         fetchBrowserProxies(),
         fetchBrowserProxyGroups(),
       ])
-      const finalList = await ensureBuiltinProxies(list)
+      const finalList = ensureBuiltinProxies(list)
       setProxies(finalList)
       setDisplayList(toDisplayList(finalList))
       setGroups(groupList)
 
-      setLatencyMap(prev => {
-        const validIds = new Set(finalList.map(p => p.proxyId))
+      setLatencyMap((prev) => {
+        const validIds = new Set(finalList.map((p) => p.proxyId))
         const next: Record<string, number> = {}
         Object.entries(prev).forEach(([proxyId, latency]) => {
           if (validIds.has(proxyId)) next[proxyId] = latency
@@ -181,8 +139,8 @@ export function ProxyPoolPage() {
         return next
       })
 
-      setLatencyEngineMap(prev => {
-        const validIds = new Set(finalList.map(p => p.proxyId))
+      setLatencyEngineMap((prev) => {
+        const validIds = new Set(finalList.map((p) => p.proxyId))
         const next: Record<string, string> = {}
         Object.entries(prev).forEach(([proxyId, engine]) => {
           if (validIds.has(proxyId)) next[proxyId] = engine
@@ -190,8 +148,8 @@ export function ProxyPoolPage() {
         return next
       })
 
-      setIPHealthMap(prev => {
-        const validIds = new Set(finalList.map(p => p.proxyId))
+      setIPHealthMap((prev) => {
+        const validIds = new Set(finalList.map((p) => p.proxyId))
         const next: Record<string, ProxyIPHealthResult> = {}
         Object.entries(prev).forEach(([proxyId, health]) => {
           if (validIds.has(proxyId)) next[proxyId] = health
@@ -207,8 +165,7 @@ export function ProxyPoolPage() {
 
   useEffect(() => {
     void loadProxies()
-    void loadBrowserSettings()
-  }, [loadProxies, loadBrowserSettings])
+  }, [loadProxies])
 
   const { protocolOptions, filteredList } = useProxyPoolFilter({
     displayList,
@@ -235,71 +192,43 @@ export function ProxyPoolPage() {
     removeSelectedId,
   } = useProxySelection({ proxies, filteredList, saveProxies })
 
-  const updateChainEditHop = (hop: 'first' | 'second', field: keyof ChainImportForm['first'], value: string) => {
-    setChainEditForm(prev => ({
-      ...prev,
-      [hop]: {
-        ...prev[hop],
-        [field]: value,
-      },
-    }))
-  }
-
   const handleEdit = (record: ProxyDisplayInfo) => {
-    const proxy = proxies.find(p => p.proxyId === record.proxyId)
-    if (proxy) {
+    const proxy = proxies.find((p) => p.proxyId === record.proxyId)
+    if (!proxy) return
+    try {
+      const form = formFromProxyConfig(proxy.proxyName, proxy.proxyConfig)
       setEditingProxy(proxy)
       setEditForm({
-        proxyName: proxy.proxyName,
-        proxyConfig: proxy.proxyConfig,
-        preferredKernel: proxy.preferredKernel || 'auto',
-        dnsServers: proxy.dnsServers || '',
+        ...form,
         groupName: proxy.groupName || '',
       })
-      const nextChainForm = toChainImportForm(proxy.proxyName, proxy.proxyConfig)
-      if (nextChainForm) {
-        setChainEditMode(true)
-        setChainEditForm(nextChainForm)
-      } else {
-        setChainEditMode(false)
-        setChainEditForm(createInitialChainImportForm())
-      }
       setEditModalOpen(true)
+    } catch (error: any) {
+      toast.error(error?.message || '当前代理配置无法编辑，请删除后重建')
     }
   }
 
   const handleSaveProxy = async () => {
     if (!editingProxy) return
-
-    let nextProxyName = editForm.proxyName.trim()
-    let nextProxyConfig = editForm.proxyConfig
-    if (chainEditMode) {
-      try {
-        const candidate = buildChainImportCandidate(chainEditForm)
-        nextProxyName = candidate.proxyName
-        nextProxyConfig = candidate.proxyConfig
-      } catch (error: any) {
-        toast.error(error?.message || '链式代理配置无效')
-        return
-      }
-    } else if (!nextProxyName) {
-      toast.error('请输入代理名称')
-      return
-    }
-
     setSaving(true)
     try {
-      const newProxies = proxies.map(p =>
+      const candidate = buildDirectImportCandidate({
+        proxyName: editForm.proxyName,
+        protocol: editForm.protocol,
+        server: editForm.server,
+        port: editForm.port,
+        username: editForm.username,
+        password: editForm.password,
+      })
+      const newProxies = proxies.map((p) =>
         p.proxyId === editingProxy.proxyId
           ? {
-            ...p,
-            proxyName: nextProxyName,
-            proxyConfig: nextProxyConfig,
-            preferredKernel: editForm.preferredKernel === 'auto' ? undefined : editForm.preferredKernel,
-            dnsServers: editForm.dnsServers.trim() || undefined,
-            groupName: editForm.groupName.trim() || undefined,
-          }
-          : p
+              ...p,
+              proxyName: candidate.proxyName,
+              proxyConfig: candidate.proxyConfig,
+              groupName: editForm.groupName.trim() || undefined,
+            }
+          : p,
       )
       await saveProxies(newProxies)
       setEditModalOpen(false)
@@ -310,25 +239,22 @@ export function ProxyPoolPage() {
       setSaving(false)
     }
   }
+
   const {
     deleteConfirmOpen,
     setDeleteConfirmOpen,
     handleDeleteClick,
     handleDeleteConfirm,
   } = useProxyDeleteFlow({ proxies, saveProxies, removeSelectedId })
+
   return (
     <div className="space-y-5 animate-fade-in">
       <ProxyPoolHeader
         checkingAllIPHealth={checkingAllIPHealth}
-        currentConnectorStatus={currentCoreStatus?.message || '未知'}
-        hasURLImportSources={hasURLImportSources}
         onCheckAllIPHealth={() => void handleCheckAllIPHealth(filteredList)}
         onOpenSettings={() => void openCheckSettings()}
         onOpenImport={() => setImportModalOpen(true)}
-        onOpenCoreDownload={openCoreDownload}
-        onRefreshAllSources={() => void handleRefreshAllSources(false)}
         onTestAll={() => void handleTestAll(filteredList)}
-        refreshingAllSources={refreshingAllSources}
         testingAll={testingAll}
         totalCount={filteredList.length}
       />
@@ -341,9 +267,6 @@ export function ProxyPoolPage() {
         filterKeyword={filterKeyword}
         filterProtocol={filterProtocol}
         filterAvailableOnly={filterAvailableOnly}
-        globalAutoRefreshEnabled={globalAutoRefreshEnabled}
-        globalRefreshInterval={globalRefreshInterval}
-        globalRefreshIntervalM={globalRefreshIntervalM}
         groups={groups}
         ipHealthMap={ipHealthMap}
         latencyMap={latencyMap}
@@ -363,11 +286,8 @@ export function ProxyPoolPage() {
         onFilterKeywordChange={setFilterKeyword}
         onFilterProtocolChange={setFilterProtocol}
         onFilterAvailableOnlyChange={setFilterAvailableOnly}
-        onGlobalAutoRefreshEnabledChange={setGlobalAutoRefreshEnabled}
-        onGlobalRefreshIntervalMChange={setGlobalRefreshIntervalM}
         onOpenBatchDelete={() => setBatchDeleteConfirmOpen(true)}
         onOpenIPHealthDetail={openIPHealthDetail}
-        onRefreshSingleSource={(sourceId) => void refreshSingleSource(sourceId, false)}
         onSort={({ column, order }) => {
           setSortColumn(column)
           setSortOrder(order)
@@ -375,64 +295,31 @@ export function ProxyPoolPage() {
         onTestOne={(record) => void handleTestOne(record)}
         onToggleAll={handleToggleAll}
         onToggleOne={handleToggleOne}
-        onWarmupOne={(record) => void handleWarmupOne(record)}
-        onWarmupSelected={() => void handleWarmupAll(filteredList.filter(item => selectedIds.has(item.proxyId)))}
         protocolOptions={protocolOptions}
-        refreshingSourceIds={refreshingSourceIds}
         selectedCount={selectedCount}
         selectedIds={selectedIds}
         someFilteredSelected={someFilteredSelected}
         sortColumn={sortColumn}
         sortOrder={sortOrder}
-        warmingAllBridges={warmingAllBridges}
-        warmingBridgeIds={warmingBridgeIds}
       />
 
       <ProxyPoolImportModal
         open={importModalOpen}
         groups={groups}
-        importMode={importMode}
-        importUrl={importUrl}
-        importFetchProxyId={importFetchProxyId}
-        importResolvedUrl={importResolvedUrl}
-        importText={importText}
-        importDnsServers={importDnsServers}
-        importNamePrefix={importNamePrefix}
         importGroupName={importGroupName}
-        chainImportText={chainImportText}
         directImportText={directImportText}
-        chainImportForm={chainImportForm}
         directImportForm={directImportForm}
-        fetchingImportUrl={fetchingImportUrl}
-        fetchProxyOptions={proxies.filter(proxy => proxy.proxyConfig.trim() && !proxy.proxyConfig.trim().toLowerCase().startsWith('direct://'))}
         canParseImport={canParseImport}
         onClose={() => setImportModalOpen(false)}
         onParse={handleParseImport}
-        onFetchImportUrl={handleFetchImportURL}
-        onImportModeChange={handleImportModeChange}
-        onImportUrlChange={handleImportUrlChange}
-        onImportFetchProxyIdChange={setImportFetchProxyId}
-        onImportTextChange={setImportText}
-        onImportDnsServersChange={setImportDnsServers}
-        onImportNamePrefixChange={setImportNamePrefix}
         onImportGroupNameChange={setImportGroupName}
-        onChainImportTextChange={setChainImportText}
         onDirectImportTextChange={setDirectImportText}
-        onApplyChainJSON={handleApplyChainJSON}
         onApplyDirectText={handleApplyDirectText}
-        onChainImportFormChange={(patch) => setChainImportForm((prev) => ({ ...prev, ...patch }))}
-        onChainImportHopChange={updateChainImportHop}
-        onFillChainTemplate={handleFillChainTemplate}
-        onCopyChainTemplate={() => void handleCopyChainTemplate()}
-        onFillDirectTemplate={handleFillDirectTemplate}
-        onCopyDirectTemplate={() => void handleCopyDirectTemplate()}
         onDirectImportFormChange={(patch) => setDirectImportForm((prev) => ({ ...prev, ...patch }))}
       />
 
       <ProxyPoolPreviewModal
         open={previewModalOpen}
-        importMode={importMode}
-        importDnsServers={importDnsServers}
         previewList={previewList}
         removedPreviewProxyNames={removedPreviewProxyNames}
         importing={importing}
@@ -450,13 +337,9 @@ export function ProxyPoolPage() {
         saving={saving}
         groups={groups}
         editForm={editForm}
-        chainEditMode={chainEditMode}
-        chainEditForm={chainEditForm}
         onClose={() => setEditModalOpen(false)}
         onSave={handleSaveProxy}
         onChange={(patch) => setEditForm((prev) => ({ ...prev, ...patch }))}
-        onChainEditFormChange={(patch) => setChainEditForm((prev) => ({ ...prev, ...patch }))}
-        onChainEditHopChange={updateChainEditHop}
       />
 
       <ProxyPoolIPHealthDetailModal
@@ -476,28 +359,25 @@ export function ProxyPoolPage() {
         onCheckTargetsTextChange={setCheckTargetsText}
       />
 
-      <ProxyCoreDownloadModal
-        open={coreDownloadOpen}
-        core={coreDownloadType}
-        goos={coreDownloadGOOS}
-        goarch={coreDownloadGOARCH}
-        downloadProxy={coreDownloadProxy}
-        progress={coreDownloadProgress}
-        status={downloadCoreStatus}
-        statusLoading={downloadCoreStatusLoading}
-        onCoreChange={setCoreDownloadType}
-        onGOOSChange={setCoreDownloadGOOS}
-        onGOARCHChange={setCoreDownloadGOARCH}
-        onDownloadProxyChange={setCoreDownloadProxy}
-        onClose={closeCoreDownload}
-        onStart={handleStartCoreDownload}
+      <ConfirmModal
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleDeleteConfirm}
+        title="确认删除"
+        content="确定要删除这个代理吗？此操作不可恢复。"
+        confirmText="删除"
+        danger
       />
 
-      <ConfirmModal open={deleteConfirmOpen} onClose={() => setDeleteConfirmOpen(false)} onConfirm={handleDeleteConfirm}
-        title="确认删除" content="确定要删除这个代理吗？此操作不可恢复。" confirmText="删除" danger />
-
-      <ConfirmModal open={batchDeleteConfirmOpen} onClose={() => setBatchDeleteConfirmOpen(false)} onConfirm={handleBatchDeleteConfirm}
-        title="批量删除" content={`确定要删除选中的 ${selectedCount} 个代理吗？此操作不可恢复。`} confirmText="删除" danger />
+      <ConfirmModal
+        open={batchDeleteConfirmOpen}
+        onClose={() => setBatchDeleteConfirmOpen(false)}
+        onConfirm={handleBatchDeleteConfirm}
+        title="批量删除"
+        content={`确定要删除选中的 ${selectedCount} 个代理吗？此操作不可恢复。`}
+        confirmText="删除"
+        danger
+      />
     </div>
   )
 }

@@ -124,7 +124,6 @@ func (a *App) markProfileStoppedLocked(profileId string, profile *BrowserProfile
 	profile.LastStopAt = time.Now().Format(time.RFC3339)
 	delete(a.browserMgr.BrowserProcesses, profileId)
 	a.clearDeferredStartTargets(profileId)
-	a.releaseProfileProxyBridge(profileId)
 }
 
 func (a *App) openBrowserWindowForRunningProfile(profile *BrowserProfile, extraLaunchArgs []string, startURLs []string) error {

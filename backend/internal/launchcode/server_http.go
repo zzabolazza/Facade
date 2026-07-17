@@ -13,6 +13,7 @@ func (s *LaunchServer) buildMux() *http.ServeMux {
 	mux.HandleFunc("/api/launch", s.handleLaunchWithBody)
 	mux.HandleFunc("/api/launch/logs", s.handleLaunchLogs)
 	mux.HandleFunc("/api/launch/", s.handleLaunch)
+	s.registerSwaggerRoutes(mux)
 	return mux
 }
 

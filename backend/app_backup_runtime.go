@@ -2,7 +2,6 @@ package backend
 
 import (
 	"ant-chrome/backend/internal/browser"
-	"ant-chrome/backend/internal/config"
 	"os/exec"
 	"time"
 )
@@ -19,13 +18,6 @@ func (a *App) backupStopRuntimeForMaintenance() {
 		a.browserMgr.Mutex.Unlock()
 	}
 
-	if a.xrayMgr != nil {
-		a.xrayMgr.StopAll()
-	}
-	a.clearProfileProxyBridges()
-	if a.singboxMgr != nil {
-		a.singboxMgr.StopAll()
-	}
 	if a.speedScheduler != nil {
 		a.speedScheduler.Stop()
 		a.speedScheduler = nil
@@ -42,17 +34,7 @@ func (a *App) backupReloadAfterMutation() error {
 		a.browserMgr.Mutex.Lock()
 		a.browserMgr.Profiles = make(map[string]*browser.Profile)
 		a.browserMgr.BrowserProcesses = make(map[string]*exec.Cmd)
-		a.browserMgr.XrayBridges = make(map[string]*browser.XrayBridge)
 		a.browserMgr.Mutex.Unlock()
-	}
-	if a.xrayMgr != nil {
-		a.xrayMgr.Config = a.config
-	}
-	if a.clashMgr != nil {
-		a.clashMgr.Config = a.config
-	}
-	if a.singboxMgr != nil {
-		a.singboxMgr.Config = a.config
 	}
 
 	a.migrateToSQLite()
@@ -72,8 +54,7 @@ func (a *App) backupReloadAfterMutation() error {
 		a.speedScheduler = browser.NewProxySpeedScheduler(
 			a.browserMgr.ProxyDAO,
 			func(proxyID string) (bool, int64, string) {
-				connectorType := config.NormalizeBrowserConnectorType(a.config.Browser.DefaultConnectorType)
-				r := a.testProxySpeedWithConnector(proxyID, a.getLatestProxies(), connectorType)
+				r := a.testProxySpeed(proxyID, a.getLatestProxies())
 				return r.Ok, r.LatencyMs, r.Error
 			},
 			5*time.Minute,

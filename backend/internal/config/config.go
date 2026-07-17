@@ -29,10 +29,10 @@ type Config struct {
 }
 
 type ProxyCheckConfig struct {
-	BridgeStartTimeoutMs int                `yaml:"bridge_start_timeout_ms" json:"bridgeStartTimeoutMs"`
-	SpeedTargetID        string             `yaml:"speed_target_id" json:"speedTargetId"`
-	IPHealthTargetID     string             `yaml:"ip_health_target_id" json:"ipHealthTargetId"`
-	Targets              []ProxyCheckTarget `yaml:"targets" json:"targets"`
+	PrepareTimeoutMs int                `yaml:"prepare_timeout_ms" json:"prepareTimeoutMs"`
+	SpeedTargetID    string             `yaml:"speed_target_id" json:"speedTargetId"`
+	IPHealthTargetID string             `yaml:"ip_health_target_id" json:"ipHealthTargetId"`
+	Targets          []ProxyCheckTarget `yaml:"targets" json:"targets"`
 }
 
 type ProxyCheckTarget struct {
@@ -91,12 +91,8 @@ type BrowserConfig struct {
 	Proxies                []BrowserProxy         `yaml:"proxies,omitempty"`
 	Profiles               []BrowserProfileConfig `yaml:"profiles,omitempty"`
 	ChromeBinaryPath       string                 `yaml:"chrome_binary_path,omitempty"`
-	ClashBinaryPath        string                 `yaml:"clash_binary_path,omitempty"`
-	XrayBinaryPath         string                 `yaml:"xray_binary_path,omitempty"`
-	SingBoxBinaryPath      string                 `yaml:"singbox_binary_path,omitempty"`
 	CoreRoot               string                 `yaml:"core_root,omitempty"`
 	DefaultCoreId          string                 `yaml:"default_core_id,omitempty"`
-	DefaultConnectorType   string                 `yaml:"default_connector_type,omitempty"`
 	Environments           []BrowserEnvironment   `yaml:"environments,omitempty"`
 }
 
@@ -108,32 +104,23 @@ type BrowserCore struct {
 }
 
 type BrowserProxy struct {
-	ProxyId                string `yaml:"proxy_id" json:"proxyId"`
-	ProxyName              string `yaml:"proxy_name" json:"proxyName"`
-	ProxyConfig            string `yaml:"proxy_config" json:"proxyConfig"`
-	PreferredKernel        string `yaml:"preferred_kernel,omitempty" json:"preferredKernel,omitempty"`
-	DnsServers             string `yaml:"dns_servers,omitempty" json:"dnsServers,omitempty"`
-	GroupName              string `yaml:"group_name,omitempty" json:"groupName,omitempty"`
-	SortOrder              int    `yaml:"sort_order,omitempty" json:"sortOrder,omitempty"`
-	SourceID               string `yaml:"source_id,omitempty" json:"sourceId,omitempty"`
-	SourceURL              string `yaml:"source_url,omitempty" json:"sourceUrl,omitempty"`
-	SourceNamePrefix       string `yaml:"source_name_prefix,omitempty" json:"sourceNamePrefix,omitempty"`
-	SourceAutoRefresh      bool   `yaml:"source_auto_refresh,omitempty" json:"sourceAutoRefresh,omitempty"`
-	SourceRefreshIntervalM int    `yaml:"source_refresh_interval_m,omitempty" json:"sourceRefreshIntervalM,omitempty"`
-	SourceLastRefreshAt    string `yaml:"source_last_refresh_at,omitempty" json:"sourceLastRefreshAt,omitempty"`
-	LastLatencyMs          int64  `yaml:"-" json:"lastLatencyMs"`
-	LastTestOk             bool   `yaml:"-" json:"lastTestOk"`
-	LastTestedAt           string `yaml:"-" json:"lastTestedAt"`
-	LastIPHealthJSON       string `yaml:"-" json:"lastIPHealthJson,omitempty"`
+	ProxyId          string `yaml:"proxy_id" json:"proxyId"`
+	ProxyName        string `yaml:"proxy_name" json:"proxyName"`
+	ProxyConfig      string `yaml:"proxy_config" json:"proxyConfig"`
+	GroupName        string `yaml:"group_name,omitempty" json:"groupName,omitempty"`
+	SortOrder        int    `yaml:"sort_order,omitempty" json:"sortOrder,omitempty"`
+	LastLatencyMs    int64  `yaml:"-" json:"lastLatencyMs"`
+	LastTestOk       bool   `yaml:"-" json:"lastTestOk"`
+	LastTestedAt     string `yaml:"-" json:"lastTestedAt"`
+	LastIPHealthJSON string `yaml:"-" json:"lastIPHealthJson,omitempty"`
 }
 
 type BrowserEnvironment struct {
-	CoreId        string `yaml:"core_id" json:"coreId"`
-	CoreName      string `yaml:"core_name" json:"coreName"`
-	CorePath      string `yaml:"core_path" json:"corePath"`
-	ProxyConfig   string `yaml:"proxy_config" json:"proxyConfig"`
-	ConnectorType string `yaml:"connector_type" json:"connectorType"`
-	IsDefault     bool   `yaml:"is_default" json:"isDefault"`
+	CoreId      string `yaml:"core_id" json:"coreId"`
+	CoreName    string `yaml:"core_name" json:"coreName"`
+	CorePath    string `yaml:"core_path" json:"corePath"`
+	ProxyConfig string `yaml:"proxy_config" json:"proxyConfig"`
+	IsDefault   bool   `yaml:"is_default" json:"isDefault"`
 }
 
 type BrowserProfileConfig struct {
@@ -144,8 +131,6 @@ type BrowserProfileConfig struct {
 	FingerprintArgs    []string `yaml:"fingerprint_args" json:"fingerprintArgs"`
 	ProxyId            string   `yaml:"proxy_id" json:"proxyId"`
 	ProxyConfig        string   `yaml:"proxy_config" json:"proxyConfig"`
-	ProxyBindSourceID  string   `yaml:"proxy_bind_source_id,omitempty" json:"proxyBindSourceId,omitempty"`
-	ProxyBindSourceURL string   `yaml:"proxy_bind_source_url,omitempty" json:"proxyBindSourceUrl,omitempty"`
 	ProxyBindName      string   `yaml:"proxy_bind_name,omitempty" json:"proxyBindName,omitempty"`
 	ProxyBindUpdatedAt string   `yaml:"proxy_bind_updated_at,omitempty" json:"proxyBindUpdatedAt,omitempty"`
 	LaunchArgs         []string `yaml:"launch_args" json:"launchArgs"`

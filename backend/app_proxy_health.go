@@ -1,10 +1,8 @@
 package backend
 
 import (
-	"ant-chrome/backend/internal/config"
 	"ant-chrome/backend/internal/proxy"
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -13,11 +11,9 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
-// BrowserProxyTestSpeed 手动触发单个代理测速并持久化结果
 func (a *App) BrowserProxyTestSpeed(proxyId string) ProxyTestResult {
 	proxies := a.getLatestProxies()
-	connectorType := a.defaultProxyConnectorType()
-	result := proxy.SpeedTestWithConnector(proxyId, proxies, a.xrayMgr, a.singboxMgr, a.clashMgr, connectorType, a.proxySpeedTestConfig())
+	result := proxy.SpeedTest(proxyId, proxies, a.proxySpeedTestConfig())
 	if a.browserMgr.ProxyDAO != nil {
 		testedAt := time.Now().Format(time.RFC3339)
 		_ = a.browserMgr.ProxyDAO.UpdateSpeedResult(proxyId, result.Ok, result.LatencyMs, testedAt)
@@ -30,7 +26,6 @@ const (
 	maxProxySpeedConcurrency     = 10
 )
 
-// BrowserProxyBatchTestSpeed 批量并发测速，concurrency 控制并发数（默认 5，最高 10）。
 func (a *App) BrowserProxyBatchTestSpeed(proxyIds []string, concurrency int) []ProxyTestResult {
 	if len(proxyIds) == 0 {
 		return []ProxyTestResult{}
@@ -46,7 +41,6 @@ func (a *App) BrowserProxyBatchTestSpeed(proxyIds []string, concurrency int) []P
 	}
 
 	proxies := a.getLatestProxies()
-	connectorType := a.defaultProxyConnectorType()
 	results := make([]ProxyTestResult, len(proxyIds))
 	type speedJob struct {
 		Idx     int
@@ -60,14 +54,13 @@ func (a *App) BrowserProxyBatchTestSpeed(proxyIds []string, concurrency int) []P
 		go func() {
 			defer wg.Done()
 			for job := range jobs {
-				result := proxy.SpeedTestWithConnector(job.ProxyId, proxies, a.xrayMgr, a.singboxMgr, a.clashMgr, connectorType, a.proxySpeedTestConfig())
+				result := proxy.SpeedTest(job.ProxyId, proxies, a.proxySpeedTestConfig())
 				if a.browserMgr.ProxyDAO != nil {
 					testedAt := time.Now().Format(time.RFC3339)
 					_ = a.browserMgr.ProxyDAO.UpdateSpeedResult(job.ProxyId, result.Ok, result.LatencyMs, testedAt)
 				}
 				item := buildProxyTestResult(result)
 				results[job.Idx] = item
-
 				if a.ctx != nil {
 					runtime.EventsEmit(a.ctx, "proxy:speed:result", item)
 				}
@@ -79,27 +72,17 @@ func (a *App) BrowserProxyBatchTestSpeed(proxyIds []string, concurrency int) []P
 		jobs <- speedJob{Idx: i, ProxyId: proxyID}
 	}
 	close(jobs)
-
 	wg.Wait()
 	return results
 }
 
-func (a *App) testProxySpeedWithConnector(proxyId string, proxies []BrowserProxy, connectorType string) proxy.TestResult {
-	return proxy.SpeedTestWithConnector(proxyId, proxies, a.xrayMgr, a.singboxMgr, a.clashMgr, config.NormalizeBrowserConnectorType(connectorType), a.proxySpeedTestConfig())
+func (a *App) testProxySpeed(proxyId string, proxies []BrowserProxy) proxy.TestResult {
+	return proxy.SpeedTest(proxyId, proxies, a.proxySpeedTestConfig())
 }
 
-func (a *App) defaultProxyConnectorType() string {
-	if a == nil || a.config == nil {
-		return config.BrowserConnectorXray
-	}
-	return config.NormalizeBrowserConnectorType(a.config.Browser.DefaultConnectorType)
-}
-
-// BrowserProxyCheckIPHealth 检测单个代理的出口 IP 健康信息
 func (a *App) BrowserProxyCheckIPHealth(proxyId string) ProxyIPHealthResult {
 	proxies := a.getLatestProxies()
-	connectorType := a.defaultProxyConnectorType()
-	data, err := proxy.FetchIPHealthInfo(proxyId, proxies, a.xrayMgr, a.singboxMgr, a.clashMgr, connectorType, a.proxyIPHealthConfig())
+	data, err := proxy.FetchIPHealthInfo(proxyId, proxies, a.proxyIPHealthConfig())
 	result := buildProxyIPHealthResult(proxyId, data, err)
 	a.persistProxyIPHealthResult(result)
 	if a.ctx != nil {
@@ -108,7 +91,6 @@ func (a *App) BrowserProxyCheckIPHealth(proxyId string) ProxyIPHealthResult {
 	return result
 }
 
-// BrowserProxyBatchCheckIPHealth 批量并发检测代理出口 IP 健康信息
 func (a *App) BrowserProxyBatchCheckIPHealth(proxyIds []string, concurrency int) []ProxyIPHealthResult {
 	if len(proxyIds) == 0 {
 		return []ProxyIPHealthResult{}
@@ -121,7 +103,6 @@ func (a *App) BrowserProxyBatchCheckIPHealth(proxyIds []string, concurrency int)
 	}
 
 	proxies := a.getLatestProxies()
-	connectorType := a.defaultProxyConnectorType()
 	results := make([]ProxyIPHealthResult, len(proxyIds))
 	type healthJob struct {
 		Idx     int
@@ -135,7 +116,7 @@ func (a *App) BrowserProxyBatchCheckIPHealth(proxyIds []string, concurrency int)
 		go func() {
 			defer wg.Done()
 			for job := range jobs {
-				data, err := proxy.FetchIPHealthInfo(job.ProxyId, proxies, a.xrayMgr, a.singboxMgr, a.clashMgr, connectorType, a.proxyIPHealthConfig())
+				data, err := proxy.FetchIPHealthInfo(job.ProxyId, proxies, a.proxyIPHealthConfig())
 				result := buildProxyIPHealthResult(job.ProxyId, data, err)
 				a.persistProxyIPHealthResult(result)
 				results[job.Idx] = result
@@ -150,7 +131,6 @@ func (a *App) BrowserProxyBatchCheckIPHealth(proxyIds []string, concurrency int)
 		jobs <- healthJob{Idx: i, ProxyId: proxyID}
 	}
 	close(jobs)
-
 	wg.Wait()
 	return results
 }
@@ -218,7 +198,26 @@ func mapString(data map[string]interface{}, key string) string {
 	case string:
 		return item
 	default:
-		return fmt.Sprint(value)
+		return strings.TrimSpace(strings.ReplaceAll(strings.TrimSpace(stringifyAny(item)), "\n", " "))
+	}
+}
+
+func stringifyAny(value interface{}) string {
+	switch item := value.(type) {
+	case string:
+		return item
+	case float64:
+		if item == float64(int64(item)) {
+			return strconv.FormatInt(int64(item), 10)
+		}
+		return strconv.FormatFloat(item, 'f', -1, 64)
+	case bool:
+		if item {
+			return "true"
+		}
+		return "false"
+	default:
+		return ""
 	}
 }
 
@@ -228,46 +227,18 @@ func mapInt64(data map[string]interface{}, key string) int64 {
 		return 0
 	}
 	switch item := value.(type) {
-	case int:
-		return int64(item)
-	case int8:
-		return int64(item)
-	case int16:
-		return int64(item)
-	case int32:
+	case float64:
 		return int64(item)
 	case int64:
 		return item
-	case uint:
+	case int:
 		return int64(item)
-	case uint8:
-		return int64(item)
-	case uint16:
-		return int64(item)
-	case uint32:
-		return int64(item)
-	case uint64:
-		return int64(item)
-	case float32:
-		return int64(item)
-	case float64:
-		return int64(item)
-	case json.Number:
-		if integer, err := item.Int64(); err == nil {
-			return integer
-		}
-		if decimal, err := item.Float64(); err == nil {
-			return int64(decimal)
-		}
 	case string:
-		if integer, err := strconv.ParseInt(item, 10, 64); err == nil {
-			return integer
-		}
-		if decimal, err := strconv.ParseFloat(item, 64); err == nil {
-			return int64(decimal)
-		}
+		n, _ := strconv.ParseInt(strings.TrimSpace(item), 10, 64)
+		return n
+	default:
+		return 0
 	}
-	return 0
 }
 
 func mapBool(data map[string]interface{}, key string) bool {
@@ -279,13 +250,12 @@ func mapBool(data map[string]interface{}, key string) bool {
 	case bool:
 		return item
 	case string:
-		return strings.EqualFold(item, "true") || item == "1"
-	case int:
-		return item != 0
-	case int64:
-		return item != 0
+		return strings.EqualFold(strings.TrimSpace(item), "true") || item == "1"
 	case float64:
 		return item != 0
+	case int:
+		return item != 0
+	default:
+		return false
 	}
-	return false
 }

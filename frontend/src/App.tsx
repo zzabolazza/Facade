@@ -2,7 +2,7 @@ import { Suspense, useEffect, useState } from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import { ThemeProvider } from "./shared/theme";
 import { Layout } from "./shared/layout";
-import { ToastContainer, Modal, Button, Loading, toast } from "./shared/components";
+import { ToastContainer, Modal, Button, Loading } from "./shared/components";
 import { AlertCircle } from "lucide-react";
 import { AppRoutes } from "./routes/AppRoutes";
 import { lazyNamed } from "./routes/lazyNamed";
@@ -43,33 +43,8 @@ function useWailsNotifications() {
       },
     );
 
-    const offBridgeFailed = runtime.EventsOn(
-      "proxy:bridge:failed",
-      (data: { profileId: string; profileName: string; error: string }) => {
-        addNotification({
-          type: "warning",
-          title: "代理已降级直连",
-          message: `「${data.profileName || data.profileId}」${data.error}`,
-        });
-        toast.warning(`「${data.profileName || data.profileId}」代理桥接失败，已直连启动`, 6000);
-      },
-    );
-
-    const offBridgeDied = runtime.EventsOn(
-      "proxy:bridge:died",
-      (data: { key: string; error: string }) => {
-        addNotification({
-          type: "warning",
-          title: "连接池节点失效",
-          message: `代理节点 ${data.key} 连接中断，相关实例可能无法访问网络`,
-        });
-      },
-    );
-
     return () => {
       offCrashed?.();
-      offBridgeFailed?.();
-      offBridgeDied?.();
     };
   }, [addNotification]);
 }

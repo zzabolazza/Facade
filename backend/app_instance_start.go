@@ -37,7 +37,6 @@ func (a *App) browserInstanceStartInternal(profileId string, extraLaunchArgs []s
 	if err != nil {
 		return profile, err
 	}
-	defer plan.releaseBridgeIfNeeded(a)
 
 	return a.startBrowserProfileWithPlan(input, plan)
 }

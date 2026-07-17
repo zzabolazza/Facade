@@ -10,9 +10,8 @@ import (
 	"ant-chrome/backend/internal/config"
 )
 
-// TestConnectivity 通过 TCP 握手测试代理服务器的可达性和延迟
-// 直接对 server:port 建立 TCP 连接测量 RTT，无需启动外部进程
-func TestConnectivity(proxyId string, proxyConfig string, proxies []config.BrowserProxy, _ interface{}) TestResult {
+// TestConnectivity 通过 TCP 握手测试代理服务器的可达性和延迟。
+func TestConnectivity(proxyId string, proxyConfig string, proxies []config.BrowserProxy) TestResult {
 	src := strings.TrimSpace(proxyConfig)
 	if proxyId != "" {
 		for _, item := range proxies {
@@ -25,6 +24,9 @@ func TestConnectivity(proxyId string, proxyConfig string, proxies []config.Brows
 	if src == "" {
 		return TestResult{ProxyId: proxyId, Ok: false, Engine: "tcp", Error: "代理配置为空"}
 	}
+	if strings.EqualFold(src, "direct://") {
+		return TestResult{ProxyId: proxyId, Ok: true, LatencyMs: 0, Engine: ProtocolDirect}
+	}
 
 	endpoint, err := proxyEndpoint(src)
 	if err != nil {
@@ -34,59 +36,29 @@ func TestConnectivity(proxyId string, proxyConfig string, proxies []config.Brows
 	start := time.Now()
 	conn, err := net.DialTimeout("tcp", endpoint, 10*time.Second)
 	latency := time.Since(start).Milliseconds()
-
 	if err != nil {
 		return TestResult{ProxyId: proxyId, Ok: false, LatencyMs: latency, Engine: "tcp", Error: err.Error()}
 	}
-	conn.Close()
+	_ = conn.Close()
 	return TestResult{ProxyId: proxyId, Ok: true, LatencyMs: latency, Engine: "tcp"}
 }
 
 // TestRealConnectivity 通过代理链路发起真实 HTTP 请求测量端到端延迟。
-// - DirectProxy (http/https/socks5)：直接通过该代理发送请求
-// - BridgeProxy (vmess/vless/Clash)：调用 EnsureBridge 获取 socks5 地址后发送请求
-// - SingBoxProxy (hysteria2/tuic)：调用 SingBoxManager.EnsureBridge 后发送请求
 func TestRealConnectivity(
 	proxyId string,
 	proxies []config.BrowserProxy,
-	xrayMgr *XrayManager,
-) TestResult {
-	return TestRealConnectivityWithSingBox(proxyId, proxies, xrayMgr, nil)
-}
-
-// TestRealConnectivityWithSingBox 支持 sing-box 的真实连通性测试
-func TestRealConnectivityWithSingBox(
-	proxyId string,
-	proxies []config.BrowserProxy,
-	xrayMgr *XrayManager,
-	singboxMgr *SingBoxManager,
-) TestResult {
-	return TestRealConnectivityWithConfig(proxyId, proxies, xrayMgr, singboxMgr, nil)
-}
-
-func TestRealConnectivityWithConfig(
-	proxyId string,
-	proxies []config.BrowserProxy,
-	xrayMgr *XrayManager,
-	singboxMgr *SingBoxManager,
-	cfg *SpeedTestConfig,
-) TestResult {
-	return TestRealConnectivityWithRuntimeConfig(proxyId, proxies, xrayMgr, singboxMgr, nil, config.BrowserConnectorXray, cfg)
-}
-
-func TestRealConnectivityWithRuntimeConfig(
-	proxyId string,
-	proxies []config.BrowserProxy,
-	xrayMgr *XrayManager,
-	singboxMgr *SingBoxManager,
-	clashMgr *ClashManager,
-	connectorType string,
 	cfg *SpeedTestConfig,
 ) TestResult {
 	src := resolveProxyConfig("", proxies, proxyId)
-	engine := speedTestProbeEngine(src, proxies, proxyId, connectorType)
+	engine := DetectProxyProtocol(src)
+	if engine == "unknown" && src != "" {
+		engine = "native"
+	}
 	if src == "" {
 		return TestResult{ProxyId: proxyId, Ok: false, Engine: engine, Error: "代理配置为空"}
+	}
+	if strings.EqualFold(src, "direct://") {
+		engine = ProtocolDirect
 	}
 
 	targetURLs := defaultRealConnectivityTargets()
@@ -107,7 +79,7 @@ func TestRealConnectivityWithRuntimeConfig(
 		return TestResult{ProxyId: proxyId, Ok: false, Engine: engine, Error: "真实连通性测试目标 URL 为空"}
 	}
 
-	client, err := buildProxyHTTPClient(src, proxyId, proxies, xrayMgr, singboxMgr, clashMgr, connectorType, timeout)
+	client, err := buildProxyHTTPClient(src, proxyId, proxies, timeout)
 	if err != nil {
 		return TestResult{ProxyId: proxyId, Ok: false, Engine: engine, Error: err.Error()}
 	}

@@ -17,9 +17,6 @@ func (m *Manager) InitData() {
 	if m.BrowserProcesses == nil {
 		m.BrowserProcesses = make(map[string]*exec.Cmd)
 	}
-	if m.XrayBridges == nil {
-		m.XrayBridges = make(map[string]*XrayBridge)
-	}
 	m.MigrateConfig()
 	if len(m.Profiles) > 0 {
 		return
@@ -74,8 +71,6 @@ func (m *Manager) loadProfiles() {
 			FingerprintArgs:    append([]string{}, item.FingerprintArgs...),
 			ProxyId:            item.ProxyId,
 			ProxyConfig:        item.ProxyConfig,
-			ProxyBindSourceID:  item.ProxyBindSourceID,
-			ProxyBindSourceURL: item.ProxyBindSourceURL,
 			ProxyBindName:      item.ProxyBindName,
 			ProxyBindUpdatedAt: item.ProxyBindUpdatedAt,
 			LaunchArgs:         append([]string{}, item.LaunchArgs...),
@@ -117,8 +112,6 @@ func (m *Manager) SaveProfiles() error {
 			FingerprintArgs:    append([]string{}, profile.FingerprintArgs...),
 			ProxyId:            profile.ProxyId,
 			ProxyConfig:        profile.ProxyConfig,
-			ProxyBindSourceID:  profile.ProxyBindSourceID,
-			ProxyBindSourceURL: profile.ProxyBindSourceURL,
 			ProxyBindName:      profile.ProxyBindName,
 			ProxyBindUpdatedAt: profile.ProxyBindUpdatedAt,
 			LaunchArgs:         append([]string{}, profile.LaunchArgs...),

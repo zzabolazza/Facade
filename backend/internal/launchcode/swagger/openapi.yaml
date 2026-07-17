@@ -1,0 +1,1178 @@
+openapi: 3.0.3
+info:
+  title: Ant Browser Launch API
+  description: |
+    本地 LaunchServer HTTP API（仅 `127.0.0.1`）。
+
+    ## 接口索引（共 14 个）
+
+    | 分组 | 方法 | 路径 |
+    |------|------|------|
+    | 健康检查 | GET | `/api/health` |
+    | 实例管理 | GET | `/api/profiles` |
+    | 实例管理 | POST | `/api/profiles` |
+    | 实例管理 | GET | `/api/profiles/{profileId}` |
+    | 实例管理 | PUT | `/api/profiles/{profileId}` |
+    | 实例管理 | DELETE | `/api/profiles/{profileId}` |
+    | 实例管理 | GET | `/api/profiles/{profileId}/status` |
+    | 实例管理 | POST | `/api/profiles/{profileId}/stop` |
+    | 启动 | GET | `/api/launch/{code}` |
+    | 启动 | POST | `/api/launch` |
+    | 启动 | GET | `/api/launch/logs` |
+    | 运行态 | POST | `/api/runtime/session` |
+    | 运行态 | POST | `/api/runtime/status` |
+    | 运行态 | POST | `/api/runtime/stop` |
+
+    ## 认证
+
+    若启用了 API Key，在 Authorize 中填写 header `X-Ant-Api-Key`。
+    `GET /api/health` 不需要鉴权。
+
+    ## 规则速查
+
+    - `PUT /api/profiles/{id}` 是整份更新，不是 patch
+    - 运行中的实例不能直接 `DELETE`，需先 stop
+    - `matchMode=all` 仅 `POST /api/launch` 可用；runtime 接口仅支持 `unique` / `first`
+    - `proxyId` 与 `proxyConfig` 同时传时优先 `proxyId`；`proxyId` 无效且无 `proxyConfig` 时返回 400
+    - 启动/会话响应里的 `cdpUrl` 为实例调试端口直连地址（Launch Server 不转发 CDP）
+  version: 1.0.0
+
+servers:
+  - url: /
+    description: Current LaunchServer origin
+
+tags:
+  - name: Health
+    description: 健康检查
+  - name: Profiles
+    description: 实例增删改查与单实例运行态
+  - name: Launch
+    description: 按 code / selector 启动，以及调用日志
+  - name: Runtime
+    description: 按 selector 准备会话、查状态、停止
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Ant-Api-Key
+      description: 应用设置中启用 Launch API Key 后必填
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [ok, error]
+      properties:
+        ok:
+          type: boolean
+          example: false
+        error:
+          type: string
+        authHeader:
+          type: string
+          description: 鉴权失败时返回期望的 header 名
+
+    Profile:
+      type: object
+      description: 实例完整快照
+      properties:
+        profileId:
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+        profileName:
+          type: string
+          example: buyer-001
+        userDataDir:
+          type: string
+        coreId:
+          type: string
+        fingerprintArgs:
+          type: array
+          items:
+            type: string
+        proxyId:
+          type: string
+          example: proxy-us
+        proxyConfig:
+          type: string
+          description: 原生代理链接（direct:// / http:// / https:// / socks5://）
+        proxyBindName:
+          type: string
+        proxyBindUpdatedAt:
+          type: string
+        launchArgs:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+          example: [电商]
+        keywords:
+          type: array
+          items:
+            type: string
+          example: [buyer-001]
+        groupId:
+          type: string
+        launchCode:
+          type: string
+          example: BUYER_001
+        running:
+          type: boolean
+        debugPort:
+          type: integer
+        debugReady:
+          type: boolean
+        pid:
+          type: integer
+        runtimeWarning:
+          type: string
+        lastError:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+        lastStartAt:
+          type: string
+        lastStopAt:
+          type: string
+
+    ProfileInput:
+      type: object
+      description: 创建/更新实例的配置主体
+      properties:
+        profileName:
+          type: string
+          example: buyer-001
+        userDataDir:
+          type: string
+          description: 自定义用户数据目录；空则由系统分配
+        coreId:
+          type: string
+          description: 绑定的内核 ID；空则使用默认内核
+        fingerprintArgs:
+          type: array
+          items:
+            type: string
+          description: 指纹相关启动参数
+        proxyId:
+          type: string
+          description: 代理池节点 ID；与 proxyConfig 同时传时优先本字段
+        proxyConfig:
+          type: string
+          description: 自定义原生代理链接
+        launchArgs:
+          type: array
+          items:
+            type: string
+          description: 实例默认启动参数
+        tags:
+          type: array
+          items:
+            type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        groupId:
+          type: string
+          description: 所属分组 ID
+
+    LaunchRequestParams:
+      type: object
+      description: 仅影响本次启动的临时参数（不持久化覆盖实例配置）
+      properties:
+        launchArgs:
+          type: array
+          items:
+            type: string
+          description: 本次启动临时附加参数
+        startUrls:
+          type: array
+          items:
+            type: string
+          description: 本次启动额外打开的网址
+        skipDefaultStartUrls:
+          type: boolean
+          description: 是否跳过实例默认启动 URL
+        proxyId:
+          type: string
+          description: 仅本次启动使用的代理池节点
+        proxyConfig:
+          type: string
+          description: 仅本次启动使用的自定义代理链接
+
+    LaunchSelector:
+      type: object
+      description: |
+        目标实例选择条件。新接入推荐使用本对象；
+        也可把同名字段放在请求体顶层（兼容写法）。
+      properties:
+        code:
+          type: string
+          description: launchCode
+          example: BUYER_001
+        key:
+          type: string
+          description: 兼容字段，语义同 code
+        profileId:
+          type: string
+        profileName:
+          type: string
+        keyword:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        tag:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        groupId:
+          type: string
+        matchMode:
+          type: string
+          enum: [unique, first, all]
+          description: |
+            unique=必须唯一命中；first=取第一个；all=批量（仅 POST /api/launch）
+          example: unique
+
+    ProfileWriteRequest:
+      type: object
+      required: [profile]
+      properties:
+        profile:
+          $ref: '#/components/schemas/ProfileInput'
+        launchCode:
+          type: string
+          description: 指定或覆盖实例 launchCode
+          example: BUYER_001
+        autoLaunch:
+          type: boolean
+          description: 创建/更新后是否立即启动
+        start:
+          $ref: '#/components/schemas/LaunchRequestParams'
+
+    LaunchRequest:
+      allOf:
+        - $ref: '#/components/schemas/LaunchRequestParams'
+        - type: object
+          properties:
+            selector:
+              $ref: '#/components/schemas/LaunchSelector'
+            code:
+              type: string
+              description: 兼容写法，等价于 selector.code
+            key:
+              type: string
+            profileId:
+              type: string
+            profileName:
+              type: string
+            keyword:
+              type: string
+            keywords:
+              type: array
+              items:
+                type: string
+            tag:
+              type: string
+            tags:
+              type: array
+              items:
+                type: string
+            groupId:
+              type: string
+            matchMode:
+              type: string
+              enum: [unique, first, all]
+
+    RuntimeRequest:
+      type: object
+      description: runtime 系列接口请求体（不支持 matchMode=all）
+      properties:
+        selector:
+          $ref: '#/components/schemas/LaunchSelector'
+        code:
+          type: string
+        key:
+          type: string
+        profileId:
+          type: string
+        profileName:
+          type: string
+        keyword:
+          type: string
+        keywords:
+          type: array
+          items:
+            type: string
+        tag:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        groupId:
+          type: string
+        matchMode:
+          type: string
+          enum: [unique, first]
+
+    RuntimeSessionRequest:
+      allOf:
+        - $ref: '#/components/schemas/RuntimeRequest'
+        - $ref: '#/components/schemas/LaunchRequestParams'
+        - type: object
+          properties:
+            timeoutMs:
+              type: integer
+              description: 等待 debugReady 的超时（毫秒），默认 45000，范围 1000–120000
+              example: 45000
+
+    ProfileListResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        count:
+          type: integer
+          example: 1
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Profile'
+
+    ProfileDetailResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        profileId:
+          type: string
+        profileName:
+          type: string
+        launchCode:
+          type: string
+        profile:
+          $ref: '#/components/schemas/Profile'
+
+    ProfileWriteResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        created:
+          type: boolean
+        updated:
+          type: boolean
+        launched:
+          type: boolean
+        profileId:
+          type: string
+        profileName:
+          type: string
+        launchCode:
+          type: string
+        profile:
+          $ref: '#/components/schemas/Profile'
+        error:
+          type: string
+          description: autoLaunch 失败时可能附带
+
+    ProfileDeleteResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        deleted:
+          type: boolean
+          example: true
+        profileId:
+          type: string
+        profileName:
+          type: string
+        launchCode:
+          type: string
+
+    LaunchSuccessResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        profileId:
+          type: string
+        profileName:
+          type: string
+        launchCode:
+          type: string
+        pid:
+          type: integer
+        debugPort:
+          type: integer
+        debugReady:
+          type: boolean
+        runtimeWarning:
+          type: string
+        cdpPort:
+          type: integer
+          example: 9333
+        cdpUrl:
+          type: string
+          example: http://127.0.0.1:9333
+
+    LaunchBatchSuccessResponse:
+      type: object
+      description: matchMode=all 时的批量启动响应
+      properties:
+        ok:
+          type: boolean
+          example: true
+        count:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LaunchSuccessResponse'
+
+    ProfileRuntimeResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        profileId:
+          type: string
+        profileName:
+          type: string
+        launchCode:
+          type: string
+        running:
+          type: boolean
+        pid:
+          type: integer
+        debugPort:
+          type: integer
+        debugReady:
+          type: boolean
+        runtimeWarning:
+          type: string
+        lastError:
+          type: string
+        lastStartAt:
+          type: string
+        lastStopAt:
+          type: string
+        cdpPort:
+          type: integer
+        cdpUrl:
+          type: string
+        profile:
+          $ref: '#/components/schemas/Profile'
+        stopped:
+          type: boolean
+          description: stop 接口成功时为 true
+
+    RuntimeSessionResponse:
+      allOf:
+        - $ref: '#/components/schemas/ProfileRuntimeResponse'
+        - type: object
+          properties:
+            ready:
+              type: boolean
+              description: true 表示可立即 attach
+            timeoutMs:
+              type: integer
+            waitTimedOut:
+              type: boolean
+            retryable:
+              type: boolean
+
+    LaunchCallRecord:
+      type: object
+      properties:
+        timestamp:
+          type: string
+        method:
+          type: string
+        path:
+          type: string
+        clientIp:
+          type: string
+        code:
+          type: string
+        selector:
+          $ref: '#/components/schemas/LaunchSelector'
+        profileId:
+          type: string
+        profileName:
+          type: string
+        params:
+          $ref: '#/components/schemas/LaunchRequestParams'
+        ok:
+          type: boolean
+        status:
+          type: integer
+        error:
+          type: string
+        durationMs:
+          type: integer
+
+    LaunchLogsResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+          example: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LaunchCallRecord'
+
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: 健康检查
+      description: 确认 LaunchServer 是否在线。不需要 API Key。
+      security: []
+      responses:
+        '200':
+          description: 服务在线
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+              example:
+                ok: true
+
+  /api/profiles:
+    get:
+      tags: [Profiles]
+      operationId: listProfiles
+      summary: 列出全部实例
+      description: 读取当前实例目录中的全部实例配置，适合做实例选择器或管理后台列表。
+      responses:
+        '200':
+          description: 实例列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileListResponse'
+              example:
+                ok: true
+                count: 1
+                items:
+                  - profileId: 550e8400-e29b-41d4-a716-446655440000
+                    profileName: buyer-001
+                    launchCode: BUYER_001
+                    keywords: [buyer-001]
+                    tags: [电商]
+                    proxyId: proxy-us
+                    running: false
+                    debugReady: false
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: 实例目录不可用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags: [Profiles]
+      operationId: createProfile
+      summary: 创建实例
+      description: |
+        写入实例配置，可选申请 launchCode，并支持通过 `autoLaunch` 在创建后直接启动。
+
+        - `autoLaunch=true` 时响应会附带启动结果字段
+        - `proxyId` 与 `proxyConfig` 同时传时优先 `proxyId`
+        - `proxyId` 无效：有 `proxyConfig` 则按自定义代理保存；否则 400
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileWriteRequest'
+            examples:
+              basic:
+                summary: 创建并指定 launchCode
+                value:
+                  profile:
+                    profileName: buyer-001
+                    proxyId: proxy-us
+                    keywords: [buyer-001]
+                    tags: [电商]
+                  launchCode: BUYER_001
+              autoLaunch:
+                summary: 创建并立即启动
+                value:
+                  profile:
+                    profileName: buyer-002
+                    keywords: [buyer-002]
+                  autoLaunch: true
+                  start:
+                    skipDefaultStartUrls: true
+              customProxy:
+                summary: 自定义代理链接
+                value:
+                  profile:
+                    profileName: buyer-003
+                    proxyConfig: http://127.0.0.1:18080
+                    keywords: [buyer-003]
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileWriteResponse'
+        '400':
+          description: 请求体非法或 profile 缺失 / 代理无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: launchCode 冲突或实例数超限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 创建成功但 autoLaunch 失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileWriteResponse'
+
+  /api/profiles/{profileId}:
+    parameters:
+      - name: profileId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: 550e8400-e29b-41d4-a716-446655440000
+
+    get:
+      tags: [Profiles]
+      operationId: getProfile
+      summary: 查询单个实例
+      description: 读取指定实例的完整配置快照。
+      responses:
+        '200':
+          description: 实例详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileDetailResponse'
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 实例不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags: [Profiles]
+      operationId: updateProfile
+      summary: 更新实例
+      description: |
+        用整份 `profile` 配置覆盖更新实例（不是 patch），可选覆盖 `launchCode`，并支持更新后立即启动。
+        代理字段规则同创建接口。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileWriteRequest'
+            example:
+              profile:
+                profileName: buyer-001-updated
+                proxyId: proxy-us
+                keywords: [buyer-001, checkout]
+                tags: [电商]
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileWriteResponse'
+        '400':
+          description: 请求体非法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 实例不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 更新成功但 autoLaunch 失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileWriteResponse'
+
+    delete:
+      tags: [Profiles]
+      operationId: deleteProfile
+      summary: 删除实例
+      description: 删除实例配置并移除关联 launchCode。运行中的实例会被拒绝（409），需先 stop。
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileDeleteResponse'
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 实例不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 实例仍在运行
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/profiles/{profileId}/status:
+    get:
+      tags: [Profiles]
+      operationId: getProfileStatus
+      summary: 查询实例运行态
+      description: 返回 running / debugReady / 直连 cdpUrl 等运行态字段。
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 运行态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileRuntimeResponse'
+              example:
+                ok: true
+                profileId: 550e8400-e29b-41d4-a716-446655440000
+                profileName: buyer-001
+                launchCode: BUYER_001
+                running: true
+                debugPort: 9333
+                debugReady: true
+                cdpPort: 9333
+                cdpUrl: http://127.0.0.1:9333
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 实例不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/profiles/{profileId}/stop:
+    post:
+      tags: [Profiles]
+      operationId: stopProfile
+      summary: 停止指定实例
+      description: 按 profileId 精确停止实例，适合任务完成后的回收。
+      parameters:
+        - name: profileId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 停止成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileRuntimeResponse'
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 实例不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: 当前环境不支持运行态控制
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/launch:
+    post:
+      tags: [Launch]
+      operationId: launchBySelector
+      summary: 按 selector 启动
+      description: |
+        更灵活的启动入口。支持 `selector` 或兼容顶层选择字段，以及 `launchArgs` / `startUrls` / `skipDefaultStartUrls`。
+
+        - selector 为空且无任何兼容顶层选择字段时返回 400
+        - `matchMode=all` 只在本接口可用，返回批量结果
+        - `proxyId` / `proxyConfig` 只影响本次启动，不覆盖实例原代理
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LaunchRequest'
+            examples:
+              bySelector:
+                summary: 按 keyword + tags
+                value:
+                  selector:
+                    keyword: checkout
+                    tags: [电商, 北美]
+                    matchMode: unique
+                  skipDefaultStartUrls: true
+              byCodeCompat:
+                summary: 顶层 code 兼容写法
+                value:
+                  code: BUYER_001
+                  skipDefaultStartUrls: true
+      responses:
+        '200':
+          description: 启动成功（单实例或批量）
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/LaunchSuccessResponse'
+                  - $ref: '#/components/schemas/LaunchBatchSuccessResponse'
+        '400':
+          description: selector 缺失或请求体非法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 未命中实例
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: selector 命中多个实例（unique 模式）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/launch/logs:
+    get:
+      tags: [Launch]
+      operationId: listLaunchLogs
+      summary: 查看最近调用日志
+      description: 查看 Launch / Runtime 等接口最近调用与错误，适合排障。
+      parameters:
+        - name: limit
+          in: query
+          description: 返回条数，范围 1–200，默认 50
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: 调用日志列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LaunchLogsResponse'
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/launch/{code}:
+    get:
+      tags: [Launch]
+      operationId: launchByCode
+      summary: 按 launchCode 启动
+      description: 最短路径启动接口，适合外部系统已拿到唯一 launchCode 的场景。
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+          example: BUYER_001
+      responses:
+        '200':
+          description: 启动成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LaunchSuccessResponse'
+              example:
+                ok: true
+                profileId: 550e8400-e29b-41d4-a716-446655440000
+                profileName: buyer-001
+                launchCode: BUYER_001
+                pid: 10240
+                debugPort: 9333
+                debugReady: true
+                cdpPort: 9333
+                cdpUrl: http://127.0.0.1:9333
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: launchCode 不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/runtime/session:
+    post:
+      tags: [Runtime]
+      operationId: prepareRuntimeSession
+      summary: 准备可接管会话
+      description: |
+        按 selector 命中实例，必要时自动启动，并在超时内等待 `debugReady=true`。
+        就绪后用返回的 `cdpUrl` 直连该实例调试端口。
+
+        | HTTP | 含义 |
+        |------|------|
+        | 200 + ready=true | 可直接 attach |
+        | 202 + ready=false | 已处理但未 ready，可稍后重试 |
+
+        不支持 `matchMode=all`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeSessionRequest'
+            example:
+              selector:
+                code: BUYER_001
+              timeoutMs: 45000
+              skipDefaultStartUrls: true
+      responses:
+        '200':
+          description: 实例已 ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeSessionResponse'
+              example:
+                ok: true
+                ready: true
+                waitTimedOut: false
+                retryable: false
+                profileId: 550e8400-e29b-41d4-a716-446655440000
+                launchCode: BUYER_001
+                running: true
+                debugReady: true
+                cdpPort: 9333
+                cdpUrl: http://127.0.0.1:9333
+                timeoutMs: 45000
+        '202':
+          description: 已处理但暂未 ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuntimeSessionResponse'
+        '400':
+          description: selector 缺失或 matchMode 非法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 目标实例不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/runtime/status:
+    post:
+      tags: [Runtime]
+      operationId: runtimeStatus
+      summary: 按 selector 查状态
+      description: |
+        不启动新实例，不等待 ready，只看当前 selector 命中的实例状态。
+        不支持 `matchMode=all`。`debugReady=true` 时 `cdpUrl` 为直连地址。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeRequest'
+            example:
+              selector:
+                keyword: checkout
+                matchMode: first
+      responses:
+        '200':
+          description: 运行态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileRuntimeResponse'
+        '400':
+          description: selector 缺失或 matchMode 非法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 目标实例不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/runtime/stop:
+    post:
+      tags: [Runtime]
+      operationId: runtimeStop
+      summary: 按 selector 停止
+      description: 按 selector 停止实例。不支持 `matchMode=all`。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeRequest'
+            example:
+              selector:
+                code: BUYER_001
+      responses:
+        '200':
+          description: 停止成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileRuntimeResponse'
+              example:
+                ok: true
+                stopped: true
+                profileId: 550e8400-e29b-41d4-a716-446655440000
+                launchCode: BUYER_001
+                running: false
+                debugReady: false
+                cdpPort: 0
+                cdpUrl: ""
+        '400':
+          description: selector 缺失或 matchMode 非法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: API Key 无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: 目标实例不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

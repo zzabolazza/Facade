@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"strings"
 	"sync"
 )
 
@@ -41,9 +40,6 @@ func (w *MemoryWriter) Write(entry *LogEntry) error {
 	if entry == nil {
 		return nil
 	}
-	if shouldSkipMemoryLog(entry) {
-		return nil
-	}
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -59,19 +55,6 @@ func (w *MemoryWriter) Write(entry *LogEntry) error {
 	}
 	w.entries = append(w.entries, item)
 	return nil
-}
-
-func shouldSkipMemoryLog(entry *LogEntry) bool {
-	if entry.Level != INFO || entry.Component != "Xray" {
-		return false
-	}
-	message := strings.TrimSpace(entry.Message)
-	switch message {
-	case "xray 内核进程已启动", "回收空闲桥接进程", "复用 xray 桥接进程", "复用已就绪 xray 桥接进程":
-		return true
-	default:
-		return false
-	}
 }
 
 func (w *MemoryWriter) Close() error { return nil }

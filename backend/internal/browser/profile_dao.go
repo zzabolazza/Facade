@@ -35,7 +35,6 @@ func (d *SQLiteProfileDAO) List() ([]*Profile, error) {
 	rows, err := d.db.Query(`
 		SELECT profile_id, profile_name, user_data_dir, core_id,
 		       fingerprint_args, proxy_id, proxy_config,
-		       COALESCE(proxy_bind_source_id, ''), COALESCE(proxy_bind_source_url, ''),
 		       COALESCE(proxy_bind_name, ''), COALESCE(proxy_bind_updated_at, ''),
 		       launch_args,
 		       tags, keywords, group_id, created_at, updated_at,
@@ -62,7 +61,6 @@ func (d *SQLiteProfileDAO) ListDeleted() ([]*Profile, error) {
 	rows, err := d.db.Query(`
 		SELECT profile_id, profile_name, user_data_dir, core_id,
 		       fingerprint_args, proxy_id, proxy_config,
-		       COALESCE(proxy_bind_source_id, ''), COALESCE(proxy_bind_source_url, ''),
 		       COALESCE(proxy_bind_name, ''), COALESCE(proxy_bind_updated_at, ''),
 		       launch_args,
 		       tags, keywords, group_id, created_at, updated_at,
@@ -89,7 +87,6 @@ func (d *SQLiteProfileDAO) GetById(profileId string) (*Profile, error) {
 	row := d.db.QueryRow(`
 		SELECT profile_id, profile_name, user_data_dir, core_id,
 		       fingerprint_args, proxy_id, proxy_config,
-		       COALESCE(proxy_bind_source_id, ''), COALESCE(proxy_bind_source_url, ''),
 		       COALESCE(proxy_bind_name, ''), COALESCE(proxy_bind_updated_at, ''),
 		       launch_args,
 		       tags, keywords, group_id, created_at, updated_at,
@@ -122,7 +119,7 @@ func (d *SQLiteProfileDAO) Upsert(profile *Profile) error {
 		  (profile_id, profile_name, user_data_dir, core_id, fingerprint_args,
 		   proxy_id, proxy_config, proxy_bind_source_id, proxy_bind_source_url, proxy_bind_name, proxy_bind_updated_at,
 		   launch_args, tags, keywords, group_id, created_at, updated_at, deleted_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(profile_id) DO UPDATE SET
 		  profile_name     = excluded.profile_name,
 		  user_data_dir    = excluded.user_data_dir,
@@ -130,8 +127,8 @@ func (d *SQLiteProfileDAO) Upsert(profile *Profile) error {
 		  fingerprint_args = excluded.fingerprint_args,
 		  proxy_id         = excluded.proxy_id,
 		  proxy_config     = excluded.proxy_config,
-		  proxy_bind_source_id = excluded.proxy_bind_source_id,
-		  proxy_bind_source_url = excluded.proxy_bind_source_url,
+		  proxy_bind_source_id = '',
+		  proxy_bind_source_url = '',
 		  proxy_bind_name = excluded.proxy_bind_name,
 		  proxy_bind_updated_at = excluded.proxy_bind_updated_at,
 		  launch_args      = excluded.launch_args,
@@ -142,7 +139,7 @@ func (d *SQLiteProfileDAO) Upsert(profile *Profile) error {
 		  updated_at       = excluded.updated_at`,
 		profile.ProfileId, profile.ProfileName, profile.UserDataDir, profile.CoreId,
 		string(fingerprintArgs), profile.ProxyId, profile.ProxyConfig,
-		profile.ProxyBindSourceID, profile.ProxyBindSourceURL, profile.ProxyBindName, profile.ProxyBindUpdatedAt,
+		profile.ProxyBindName, profile.ProxyBindUpdatedAt,
 		string(launchArgs), string(tags), string(keywords), profile.GroupId,
 		profile.CreatedAt, profile.UpdatedAt, profile.DeletedAt,
 	)
@@ -182,7 +179,6 @@ func (d *SQLiteProfileDAO) ListExpiredDeleted(expiredBefore string) ([]*Profile,
 	rows, err := d.db.Query(`
 		SELECT profile_id, profile_name, user_data_dir, core_id,
 		       fingerprint_args, proxy_id, proxy_config,
-		       COALESCE(proxy_bind_source_id, ''), COALESCE(proxy_bind_source_url, ''),
 		       COALESCE(proxy_bind_name, ''), COALESCE(proxy_bind_updated_at, ''),
 		       launch_args,
 		       tags, keywords, group_id, created_at, updated_at,
@@ -240,7 +236,6 @@ func (d *SQLiteProfileDAO) ListByGroup(groupId string, includeChildren bool, chi
 		rows, err = d.db.Query(fmt.Sprintf(`
 			SELECT profile_id, profile_name, user_data_dir, core_id,
 			       fingerprint_args, proxy_id, proxy_config,
-			       COALESCE(proxy_bind_source_id, ''), COALESCE(proxy_bind_source_url, ''),
 			       COALESCE(proxy_bind_name, ''), COALESCE(proxy_bind_updated_at, ''),
 			       launch_args,
 			       tags, keywords, group_id, created_at, updated_at,
@@ -251,7 +246,6 @@ func (d *SQLiteProfileDAO) ListByGroup(groupId string, includeChildren bool, chi
 		rows, err = d.db.Query(`
 			SELECT profile_id, profile_name, user_data_dir, core_id,
 			       fingerprint_args, proxy_id, proxy_config,
-			       COALESCE(proxy_bind_source_id, ''), COALESCE(proxy_bind_source_url, ''),
 			       COALESCE(proxy_bind_name, ''), COALESCE(proxy_bind_updated_at, ''),
 			       launch_args,
 			       tags, keywords, group_id, created_at, updated_at,
@@ -310,7 +304,7 @@ func scanProfile(s scanner) (*Profile, error) {
 	err := s.Scan(
 		&p.ProfileId, &p.ProfileName, &p.UserDataDir, &p.CoreId,
 		&fingerprintArgsJSON, &p.ProxyId, &p.ProxyConfig,
-		&p.ProxyBindSourceID, &p.ProxyBindSourceURL, &p.ProxyBindName, &p.ProxyBindUpdatedAt,
+		&p.ProxyBindName, &p.ProxyBindUpdatedAt,
 		&launchArgsJSON, &tagsJSON, &keywordsJSON, &p.GroupId,
 		&p.CreatedAt, &p.UpdatedAt, &p.DeletedAt,
 	)

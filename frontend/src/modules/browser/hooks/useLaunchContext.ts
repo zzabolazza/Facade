@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { toast } from '../../../shared/components'
-import { fetchLaunchServerInfo, type LaunchServerInfo } from '../api'
-import { DEFAULT_API_AUTH, DEFAULT_LAUNCH_BASE_URL } from '../launchContext'
+import { fetchLaunchServerInfo } from '../api'
+
+const DEFAULT_LAUNCH_BASE_URL = 'http://127.0.0.1:19876'
 
 interface UseLaunchContextOptions {
   enabled?: boolean
@@ -11,17 +12,15 @@ export function useLaunchContext({ enabled = true }: UseLaunchContextOptions = {
   const mountedRef = useRef(true)
   const [launchBaseUrl, setLaunchBaseUrl] = useState(DEFAULT_LAUNCH_BASE_URL)
   const [launchServerReady, setLaunchServerReady] = useState(false)
-  const [apiAuth, setApiAuth] = useState<LaunchServerInfo['apiAuth']>(DEFAULT_API_AUTH)
   const [launchContextLoading, setLaunchContextLoading] = useState(enabled)
 
-  const applyLaunchInfo = (info: LaunchServerInfo) => {
+  const applyLaunchInfo = (info: Awaited<ReturnType<typeof fetchLaunchServerInfo>>) => {
     if (!mountedRef.current) {
       return
     }
 
     setLaunchBaseUrl(info.baseUrl || DEFAULT_LAUNCH_BASE_URL)
     setLaunchServerReady(info.ready)
-    setApiAuth(info.apiAuth)
   }
 
   const refreshLaunchContext = async (showError = false) => {
@@ -65,7 +64,6 @@ export function useLaunchContext({ enabled = true }: UseLaunchContextOptions = {
   return {
     launchBaseUrl,
     launchServerReady,
-    apiAuth,
     launchContextLoading,
     refreshLaunchContext,
   }

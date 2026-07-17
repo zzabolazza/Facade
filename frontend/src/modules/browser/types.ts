@@ -1,4 +1,4 @@
-﻿export interface BrowserProfile {
+export interface BrowserProfile {
   profileId: string
   profileName: string
   userDataDir: string
@@ -6,8 +6,6 @@
   fingerprintArgs: string[]
   proxyId: string
   proxyConfig: string
-  proxyBindSourceId?: string
-  proxyBindSourceUrl?: string
   proxyBindName?: string
   proxyBindUpdatedAt?: string
   launchArgs: string[]
@@ -91,8 +89,6 @@ export interface BrowserSettings {
   restoreLastSession: boolean
   startReadyTimeoutMs: number
   startStableWindowMs: number
-  // xray 表示 Xray + sing-box 组合连接栈；mihomo 表示独立 Mihomo 连接栈。
-  defaultConnectorType: 'xray' | 'mihomo' | string
 }
 
 export interface ProxyCheckTarget {
@@ -106,7 +102,7 @@ export interface ProxyCheckTarget {
 }
 
 export interface ProxyCheckSettings {
-  bridgeStartTimeoutMs: number
+  prepareTimeoutMs: number
   speedTargetId: string
   ipHealthTargetId: string
   targets: ProxyCheckTarget[]
@@ -135,15 +131,7 @@ export interface BrowserProxy {
   proxyId: string
   proxyName: string
   proxyConfig: string
-  preferredKernel?: 'auto' | 'xray' | 'sing-box' | 'mihomo' | string
-  dnsServers?: string
   groupName?: string
-  sourceId?: string
-  sourceUrl?: string
-  sourceNamePrefix?: string
-  sourceAutoRefresh?: boolean
-  sourceRefreshIntervalM?: number
-  sourceLastRefreshAt?: string
   lastLatencyMs?: number
   lastTestOk?: boolean
   lastTestedAt?: string
@@ -165,51 +153,6 @@ export interface ProxyIPHealthResult {
   asOrganization: string
   rawData: Record<string, any>
   updatedAt: string
-}
-
-
-export interface ProxyCoreDownloadProgress {
-  core: string
-  goos: string
-  goarch: string
-  phase: string
-  progress: number
-  message: string
-}
-
-export interface ProxyCoreStatusResult {
-  core: string
-  goos: string
-  goarch: string
-  installed: boolean
-  configured: boolean
-  active: boolean
-  binaryPath: string
-  source: string
-  message: string
-}
-
-export interface ProxyCoreDownloadInfoResult {
-  core: string
-  goos: string
-  goarch: string
-  version: string
-  repo: string
-  releaseUrl: string
-  downloadUrl: string
-  assetName: string
-  installDir: string
-  binaryName: string
-  message: string
-}
-
-export interface ProxyBridgeWarmupResult {
-  proxyId: string
-  ok: boolean
-  engine: string
-  socksUrl: string
-  latencyMs: number
-  error: string
 }
 
 export interface ProxySpeedTestResult {

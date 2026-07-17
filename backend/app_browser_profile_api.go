@@ -125,8 +125,6 @@ func (a *App) migrateToSQLite() {
 					FingerprintArgs:    pc.FingerprintArgs,
 					ProxyId:            pc.ProxyId,
 					ProxyConfig:        pc.ProxyConfig,
-					ProxyBindSourceID:  pc.ProxyBindSourceID,
-					ProxyBindSourceURL: pc.ProxyBindSourceURL,
 					ProxyBindName:      pc.ProxyBindName,
 					ProxyBindUpdatedAt: pc.ProxyBindUpdatedAt,
 					LaunchArgs:         pc.LaunchArgs,

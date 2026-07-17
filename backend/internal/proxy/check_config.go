@@ -6,12 +6,12 @@ import (
 	"time"
 )
 
-const defaultBridgeStartTimeoutMs = 15000
+const defaultPrepareTimeoutMs = 15000
 const defaultSpeedTargetTimeoutMs = 3000
 const defaultIPHealthTargetTimeoutMs = 10000
 
 func NormalizeCheckSettings(settings config.ProxyCheckConfig) config.ProxyCheckConfig {
-	settings.BridgeStartTimeoutMs = normalizePositiveInt(settings.BridgeStartTimeoutMs, defaultBridgeStartTimeoutMs)
+	settings.PrepareTimeoutMs = normalizePositiveInt(settings.PrepareTimeoutMs, defaultPrepareTimeoutMs)
 	settings.SpeedTargetID = strings.TrimSpace(settings.SpeedTargetID)
 	settings.IPHealthTargetID = strings.TrimSpace(settings.IPHealthTargetID)
 	settings.Targets = NormalizeCheckTargets(settings.Targets)
@@ -29,8 +29,8 @@ func NormalizeCheckSettings(settings config.ProxyCheckConfig) config.ProxyCheckC
 
 func BuildSpeedTestConfig(settings config.ProxyCheckConfig) *SpeedTestConfig {
 	cfg := DefaultSpeedTestConfig
-	if settings.BridgeStartTimeoutMs > 0 {
-		cfg.TCPTimeout = time.Duration(settings.BridgeStartTimeoutMs) * time.Millisecond
+	if settings.PrepareTimeoutMs > 0 {
+		cfg.TCPTimeout = time.Duration(settings.PrepareTimeoutMs) * time.Millisecond
 	}
 	target := FindCheckTarget(settings.Targets, settings.SpeedTargetID, "speed")
 	if strings.TrimSpace(target.URL) != "" {

@@ -5,9 +5,6 @@ import (
 	"strings"
 )
 
-const defaultSourceRefreshIntervalM = 60
-const maxSourceRefreshIntervalM = 24 * 60
-
 func NormalizeBrowserProxies(proxies []config.BrowserProxy, generateID func() string) []config.BrowserProxy {
 	normalized := make([]config.BrowserProxy, 0, len(proxies)+1)
 	for i, item := range proxies {
@@ -22,47 +19,12 @@ func NormalizeBrowserProxies(proxies []config.BrowserProxy, generateID func() st
 			proxyID = generateID()
 		}
 
-		sourceURL := strings.TrimSpace(item.SourceURL)
-		sourceID := strings.TrimSpace(item.SourceID)
-		sourceNamePrefix := strings.TrimSpace(item.SourceNamePrefix)
-		sourceLastRefreshAt := strings.TrimSpace(item.SourceLastRefreshAt)
-		sourceRefreshIntervalM := item.SourceRefreshIntervalM
-		if sourceRefreshIntervalM < 0 {
-			sourceRefreshIntervalM = 0
-		}
-		if sourceRefreshIntervalM > maxSourceRefreshIntervalM {
-			sourceRefreshIntervalM = maxSourceRefreshIntervalM
-		}
-
-		sourceAutoRefresh := item.SourceAutoRefresh && sourceURL != ""
-		if sourceAutoRefresh && sourceRefreshIntervalM <= 0 {
-			sourceRefreshIntervalM = defaultSourceRefreshIntervalM
-		}
-		if !sourceAutoRefresh {
-			sourceRefreshIntervalM = 0
-		}
-		if sourceURL == "" {
-			sourceID = ""
-			sourceNamePrefix = ""
-			sourceLastRefreshAt = ""
-			sourceAutoRefresh = false
-			sourceRefreshIntervalM = 0
-		}
-
 		normalized = append(normalized, config.BrowserProxy{
-			ProxyId:                proxyID,
-			ProxyName:              proxyName,
-			ProxyConfig:            proxyConfig,
-			PreferredKernel:        NormalizePreferredKernel(item.PreferredKernel),
-			DnsServers:             strings.TrimSpace(item.DnsServers),
-			GroupName:              strings.TrimSpace(item.GroupName),
-			SourceID:               sourceID,
-			SourceURL:              sourceURL,
-			SourceNamePrefix:       sourceNamePrefix,
-			SourceAutoRefresh:      sourceAutoRefresh,
-			SourceRefreshIntervalM: sourceRefreshIntervalM,
-			SourceLastRefreshAt:    sourceLastRefreshAt,
-			SortOrder:              i,
+			ProxyId:     proxyID,
+			ProxyName:   proxyName,
+			ProxyConfig: proxyConfig,
+			GroupName:   strings.TrimSpace(item.GroupName),
+			SortOrder:   i,
 		})
 	}
 

@@ -6,7 +6,6 @@ import (
 	"ant-chrome/backend/internal/database"
 	"ant-chrome/backend/internal/launchcode"
 	"ant-chrome/backend/internal/logger"
-	"ant-chrome/backend/internal/proxy"
 	"context"
 	"strings"
 	"sync"
@@ -26,9 +25,6 @@ type App struct {
 	db             *database.DB
 	interceptor    *logger.MethodInterceptor
 	browserMgr     *browser.Manager
-	xrayMgr        *proxy.XrayManager
-	clashMgr       *proxy.ClashManager
-	singboxMgr     *proxy.SingBoxManager
 	launchCodeSvc  *launchcode.LaunchCodeService
 	launchServer   *launchcode.LaunchServer
 	speedScheduler *browser.ProxySpeedScheduler
@@ -38,8 +34,6 @@ type App struct {
 	forceQuit              bool
 	quitMode               quitMode
 	maintenanceMu          sync.Mutex
-	bridgeMu               sync.Mutex
-	profileBridgeRefs      map[string]profileProxyBridgeRef
 	deferredStartTargetsMu sync.Mutex
 	deferredStartTargets   map[string][]string
 	stopServicesOnce       sync.Once
@@ -55,7 +49,6 @@ func NewApp(appRoot string, appVersion ...string) *App {
 	return &App{
 		appRoot:              strings.TrimSpace(appRoot),
 		version:              version,
-		profileBridgeRefs:    make(map[string]profileProxyBridgeRef),
 		deferredStartTargets: make(map[string][]string),
 	}
 }

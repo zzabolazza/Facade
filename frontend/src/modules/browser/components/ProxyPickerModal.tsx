@@ -8,7 +8,9 @@ import { EventsOn } from '../../../wailsjs/runtime/runtime'
 import { ProxyImportModal } from './ProxyImportModal'
 import { ProxyEditModal } from './ProxyPickerModal.edit'
 import { GroupItem, ProxyRow } from './ProxyPickerModal.rows'
-import { ALL_GROUP, BATCH_TEST_CONCURRENCY, DIRECT_PROXY_ID, INITIAL_CHAIN_EDIT_FORM, SPEED_RESULT_EVENT, buildChainProxyConfig, formatProxyConfigForDisplay, parseChainSocks5Config, toChainEditForm, type ChainEditForm, type ChainHopForm, type SpeedResult } from './ProxyPickerModal.helpers'
+import { ALL_GROUP, BATCH_TEST_CONCURRENCY, DIRECT_PROXY_ID, SPEED_RESULT_EVENT, type SpeedResult } from './ProxyPickerModal.helpers'
+import { buildDirectImportCandidate, formFromProxyConfig } from '../pages/proxyPool/helpers.direct'
+import type { ProxyEditFormValue } from './ProxyPickerModal.edit'
 
 interface ProxyPickerModalProps {
   open: boolean
@@ -31,12 +33,15 @@ export function ProxyPickerModal({ open, currentProxyId, title = '从代理池�
   const [speedMap, setSpeedMap] = useState<Record<string, SpeedResult>>({})
   const [testingIds, setTestingIds] = useState<Set<string>>(new Set())
   const [editingProxy, setEditingProxy] = useState<BrowserProxy | null>(null)
-  const [editName, setEditName] = useState('')
-  const [editConfig, setEditConfig] = useState('')
-  const [editGroup, setEditGroup] = useState('')
-  const [editDnsServers, setEditDnsServers] = useState('')
-  const [chainEditMode, setChainEditMode] = useState(false)
-  const [chainEditForm, setChainEditForm] = useState<ChainEditForm>(INITIAL_CHAIN_EDIT_FORM)
+  const [editForm, setEditForm] = useState<ProxyEditFormValue>({
+    proxyName: '',
+    protocol: 'http',
+    server: '',
+    port: '',
+    username: '',
+    password: '',
+    groupName: '',
+  })
   const [savingEdit, setSavingEdit] = useState(false)
   const [deleteCandidate, setDeleteCandidate] = useState<BrowserProxy | null>(null)
   const abortRef = useRef(false)
@@ -123,7 +128,7 @@ export function ProxyPickerModal({ open, currentProxyId, title = '从代理池�
       })
       .map(proxy => ({
         proxy,
-        displayConfig: formatProxyConfigForDisplay(proxy.proxyConfig),
+        displayConfig: proxy.proxyConfig || '',
       }))
   }, [selectedGroup, search, allProxies, speedMap])
 
@@ -230,29 +235,16 @@ export function ProxyPickerModal({ open, currentProxyId, title = '从代理池�
     e.stopPropagation()
     if (proxy.proxyId === DIRECT_PROXY_ID) return
     setEditingProxy(proxy)
-    setEditName(proxy.proxyName || '')
-    setEditConfig(proxy.proxyConfig || '')
-    setEditGroup(proxy.groupName || '')
-    setEditDnsServers(proxy.dnsServers || '')
-
-    const chainCfg = parseChainSocks5Config(proxy.proxyConfig || '')
-    if (chainCfg) {
-      setChainEditMode(true)
-      setChainEditForm(toChainEditForm(proxy.proxyName || '', chainCfg))
-    } else {
-      setChainEditMode(false)
-      setChainEditForm(INITIAL_CHAIN_EDIT_FORM)
+    try {
+      const parsed = formFromProxyConfig(proxy.proxyName || '', proxy.proxyConfig || '')
+      setEditForm({
+        ...parsed,
+        groupName: proxy.groupName || '',
+      })
+    } catch (error: any) {
+      toast.error(error?.message || '当前代理不是原生链接，无法编辑')
+      setEditingProxy(null)
     }
-  }
-
-  const updateChainHop = (hop: 'first' | 'second', field: keyof ChainHopForm, value: string) => {
-    setChainEditForm(prev => ({
-      ...prev,
-      [hop]: {
-        ...prev[hop],
-        [field]: value,
-      },
-    }))
   }
 
   const closeEditModal = () => {
@@ -262,30 +254,28 @@ export function ProxyPickerModal({ open, currentProxyId, title = '从代理池�
 
   const handleSaveEdit = async () => {
     if (!editingProxy) return
-    const nextName = chainEditMode ? chainEditForm.proxyName.trim() : editName.trim()
-    if (!nextName) {
-      toast.error('请输入代理名称')
+    let candidate
+    try {
+      candidate = buildDirectImportCandidate({
+        proxyName: editForm.proxyName,
+        protocol: editForm.protocol,
+        server: editForm.server,
+        port: editForm.port,
+        username: editForm.username,
+        password: editForm.password,
+      })
+    } catch (error: any) {
+      toast.error(error?.message || '代理配置无效')
       return
-    }
-
-    let nextConfig = editConfig.trim()
-    if (chainEditMode) {
-      try {
-        nextConfig = buildChainProxyConfig(chainEditForm)
-      } catch (error: any) {
-        toast.error(error?.message || '链式代理配置无效')
-        return
-      }
     }
 
     const nextProxies = allProxies.map(item =>
       item.proxyId === editingProxy.proxyId
         ? {
             ...item,
-            proxyName: nextName,
-            proxyConfig: nextConfig,
-            groupName: editGroup.trim() || undefined,
-            dnsServers: editDnsServers.trim() || undefined,
+            proxyName: candidate.proxyName,
+            proxyConfig: candidate.proxyConfig,
+            groupName: editForm.groupName.trim() || undefined,
           }
         : item
     )
@@ -429,19 +419,10 @@ export function ProxyPickerModal({ open, currentProxyId, title = '从代理池�
 
       <ProxyEditModal
         open={!!editingProxy}
-        chainEditMode={chainEditMode}
-        editName={editName}
-        editConfig={editConfig}
-        editGroup={editGroup}
-        editDnsServers={editDnsServers}
-        chainEditForm={chainEditForm}
+        editForm={editForm}
+        groups={groups}
         saving={savingEdit}
-        setEditName={setEditName}
-        setEditConfig={setEditConfig}
-        setEditGroup={setEditGroup}
-        setEditDnsServers={setEditDnsServers}
-        setChainEditForm={setChainEditForm}
-        updateChainHop={updateChainHop}
+        setEditForm={setEditForm}
         onClose={closeEditModal}
         onSave={handleSaveEdit}
       />

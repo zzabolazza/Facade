@@ -1,4 +1,4 @@
-﻿import { Button, FormItem, Input, Modal, Textarea } from '../../../../shared/components'
+import { Button, FormItem, Input, Modal, Textarea } from '../../../../shared/components'
 import type { ProxyCheckSettings } from '../../types'
 
 interface ProxyPoolCheckSettingsModalProps {
@@ -36,11 +36,11 @@ export function ProxyPoolCheckSettingsModal({
       )}
     >
       <div className="space-y-4">
-        <FormItem label="桥接启动等待" hint="毫秒" >
+        <FormItem label="代理准备超时" hint="毫秒">
           <Input
             type="number"
-            value={checkSettings.bridgeStartTimeoutMs}
-            onChange={(e) => onCheckSettingsChange(prev => ({ ...prev, bridgeStartTimeoutMs: Number(e.target.value) || 15000 }))}
+            value={checkSettings.prepareTimeoutMs}
+            onChange={(e) => onCheckSettingsChange(prev => ({ ...prev, prepareTimeoutMs: Number(e.target.value) || 15000 }))}
           />
         </FormItem>
         <FormItem label="测速目标 ID">

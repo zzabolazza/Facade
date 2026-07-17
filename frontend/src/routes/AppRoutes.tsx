@@ -44,10 +44,6 @@ const ExtensionManagementPage = lazyNamed(
   () => import("../modules/browser/pages/ExtensionManagementPage"),
   "ExtensionManagementPage",
 );
-const LaunchApiDocsPage = lazyNamed(
-  () => import("../modules/browser/pages/LaunchApiDocsPage"),
-  "LaunchApiDocsPage",
-);
 const TagManagementPage = lazyNamed(
   () => import("../modules/browser/pages/TagManagementPage"),
   "TagManagementPage",
@@ -72,16 +68,7 @@ export function AppRoutes() {
       <Route path="/browser/cores" element={<CoreManagementPage />} />
       <Route path="/browser/extensions" element={<ExtensionManagementPage />} />
       <Route path="/browser/bookmarks" element={<BookmarkSettingsPage />} />
-      <Route path="/system/docs" element={<LaunchApiDocsPage />} />
-      <Route
-        path="/browser/launch-api"
-        element={<Navigate to="/system/docs" replace />}
-      />
       <Route path="/browser/tags" element={<TagManagementPage />} />
-      <Route
-        path="/system/tutorial"
-        element={<Navigate to="/system/docs" replace />}
-      />
     </Routes>
   );
 }
