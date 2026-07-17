@@ -9,8 +9,6 @@ import {
   Monitor,
   Settings,
   Database,
-  ChevronLeft,
-  ChevronRight,
   Layers,
   PieChart,
   Cpu,
@@ -18,14 +16,13 @@ import {
   Bot,
   Puzzle,
   Tag,
+  PanelLeftClose,
+  PanelLeftOpen,
   type LucideIcon,
 } from "lucide-react";
 import clsx from "clsx";
 import { useLayoutStore } from "../../store/layoutStore";
 import { projectConfig, navigationConfig } from "../../config";
-
-// 导入应用logo
-import logoImage from "../../resources/images/logo.png";
 
 const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard,
@@ -57,87 +54,80 @@ export function Sidebar() {
   return (
     <aside
       className={clsx(
-        "bg-[var(--color-bg-surface)] flex flex-col transition-all duration-300 border-r border-[var(--color-border-default)]",
-        sidebarCollapsed ? "w-16" : "w-60",
+        "flex shrink-0 flex-col bg-gradient-to-b from-[#12141c] to-[#181b26] text-[#c9cbdb] transition-[width] duration-200",
+        sidebarCollapsed ? "w-16 px-2" : "w-56 px-3 max-sm:w-16 max-sm:px-2",
       )}
     >
-      {/* Logo */}
       <div
         className={clsx(
-          "h-14 flex items-center border-b border-[var(--color-border-muted)]",
-          sidebarCollapsed ? "justify-center px-2" : "px-5",
+          "flex h-[66px] items-center gap-2.5",
+          sidebarCollapsed ? "justify-center" : "px-2 max-sm:justify-center max-sm:px-0",
         )}
       >
-        {!sidebarCollapsed ? (
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 bg-[var(--color-accent)] flex items-center justify-center">
-              <img
-                src={logoImage}
-                alt="应用Logo"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  // 图片加载失败时显示首字母
-                  e.currentTarget.style.display = "none";
-                  e.currentTarget.parentElement?.classList.add("fallback-logo");
-                }}
-              />
-              <span className="text-xs font-bold text-[var(--color-text-inverse)] hidden fallback-content">
-                {projectConfig.shortName.charAt(0)}
-              </span>
-            </div>
-            <h2 className="text-base font-semibold text-[var(--color-text-primary)] tracking-tight truncate">
+        <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#4b6eff] to-[#7c5cff] text-[13px] font-bold text-white shadow-[inset_0_0_0_1px_rgb(255_255_255_/_0.14)]">
+          AB
+        </div>
+        {!sidebarCollapsed && (
+          <div className="min-w-0">
+            <div className="truncate text-[15px] font-extrabold tracking-tight text-white max-sm:hidden">
               {projectConfig.name}
-            </h2>
-          </div>
-        ) : (
-          <div className="w-8 h-8 rounded-full overflow-hidden bg-[var(--color-accent)] flex items-center justify-center">
-            <img
-              src={logoImage}
-              alt="应用Logo"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                // 图片加载失败时显示首字母
-                e.currentTarget.style.display = "none";
-                e.currentTarget.parentElement?.classList.add("fallback-logo");
-              }}
-            />
-            <span className="text-xs font-bold text-[var(--color-text-inverse)] hidden fallback-content">
-              {projectConfig.shortName.charAt(0)}
-            </span>
+            </div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-[#6d7186] max-sm:hidden">
+              Fleet Console
+            </div>
           </div>
         )}
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 py-4 px-3 overflow-y-auto">
+      <nav className="flex-1 overflow-y-auto py-2">
         <div className="space-y-1">
-          {navigationConfig.map((item) => {
+          {navigationConfig.map((item, index) => {
             const Icon = getIcon(item.icon);
             const isActive =
               location.pathname === item.path ||
               (item.path !== "/" &&
                 location.pathname.startsWith(`${item.path}/`));
+            const label = String(index + 1).padStart(2, "0");
 
             return (
               <Link
                 key={item.path}
                 to={item.path}
-                title={sidebarCollapsed ? item.name : undefined}
+                title={item.name}
+                aria-label={item.name}
                 className={clsx(
-                  "flex items-center rounded-lg transition-all duration-150",
+                  "group relative flex items-center rounded-lg border transition-colors duration-150",
                   isActive
-                    ? "bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-sm"
-                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-accent-muted)] hover:text-[var(--color-text-primary)]",
+                    ? "border-white/10 bg-[#1f2333] text-white"
+                    : "border-transparent text-[#a9acc0] hover:bg-white/[0.06] hover:text-[#e7e8f2]",
                   sidebarCollapsed
-                    ? "justify-center w-10 h-10 mx-auto"
-                    : "px-3 py-2.5 gap-3",
+                    ? "mx-auto h-10 w-10 justify-center"
+                    : "gap-3 px-3 py-2.5 max-sm:mx-auto max-sm:h-10 max-sm:w-10 max-sm:justify-center max-sm:px-0",
                 )}
               >
-                <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+                {isActive && (
+                  <span
+                    className={clsx(
+                      "absolute bottom-2 top-2 w-[3px] rounded-r bg-[var(--color-accent)]",
+                      sidebarCollapsed ? "-left-2" : "-left-3 max-sm:-left-2",
+                    )}
+                  />
+                )}
+                <Icon className="h-[18px] w-[18px] shrink-0 opacity-90" />
                 {!sidebarCollapsed && (
-                  <span className="text-sm font-medium truncate">
-                    {item.name}
-                  </span>
+                  <>
+                    <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium max-sm:hidden">
+                      {item.name}
+                    </span>
+                    <span
+                      className={clsx(
+                        "font-mono text-[9.5px] max-sm:hidden",
+                        isActive ? "text-[#7c8dff]" : "text-[#5a5e73]",
+                      )}
+                    >
+                      {label}
+                    </span>
+                  </>
                 )}
               </Link>
             );
@@ -145,24 +135,24 @@ export function Sidebar() {
         </div>
       </nav>
 
-      {/* Toggle Button */}
-      <div className="p-3 border-t border-[var(--color-border-muted)]">
+      <div className="py-3">
         <button
+          type="button"
           onClick={toggleSidebar}
           className={clsx(
-            "flex items-center rounded-lg text-[var(--color-text-muted)] hover:bg-[var(--color-accent-muted)] hover:text-[var(--color-text-secondary)] transition-all duration-150",
+            "flex h-9 items-center rounded-lg text-[#8b8fa3] transition-colors hover:bg-white/[0.06] hover:text-[#e7e8f2]",
             sidebarCollapsed
-              ? "justify-center w-10 h-10 mx-auto"
-              : "w-full px-3 py-2 gap-3",
+              ? "mx-auto w-10 justify-center"
+              : "w-full justify-center gap-2 px-3 max-sm:mx-auto max-sm:w-10 max-sm:px-0",
           )}
-          title={sidebarCollapsed ? "展开" : "收起"}
+          title={sidebarCollapsed ? "展开侧边栏" : "收起侧边栏"}
         >
           {sidebarCollapsed ? (
-            <ChevronRight className="w-[18px] h-[18px]" />
+            <PanelLeftOpen className="h-[18px] w-[18px]" />
           ) : (
             <>
-              <ChevronLeft className="w-[18px] h-[18px]" />
-              <span className="text-sm">收起侧边栏</span>
+              <PanelLeftClose className="h-[18px] w-[18px]" />
+              <span className="text-sm max-sm:hidden">收起侧边栏</span>
             </>
           )}
         </button>

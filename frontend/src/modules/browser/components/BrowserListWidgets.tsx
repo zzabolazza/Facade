@@ -34,8 +34,8 @@ export function BatchToolbar({
   if (selectedCount === 0) return null
 
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 bg-[var(--color-accent)]/10 border border-[var(--color-accent)]/20 rounded-lg">
-      <span className="text-sm font-medium text-[var(--color-accent)]">已选 {selectedCount} / {totalCount}</span>
+    <div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-[rgb(75_110_255_/_0.25)] bg-[var(--color-accent-muted)] px-3 py-2">
+      <span className="text-xs font-semibold text-[var(--color-accent)]">已选 {selectedCount} / {totalCount}</span>
       <div className="flex gap-1.5 ml-auto">
         <Button size="sm" variant="ghost" onClick={onSelectAll}>全选</Button>
         <Button size="sm" variant="ghost" onClick={onDeselectAll}>取消</Button>
@@ -120,7 +120,7 @@ export function LaunchCodeCell({ profileId, code, onRefresh }: LaunchCodeCellPro
 
   return (
     <div className="flex items-center gap-1">
-      <code className="text-xs font-mono bg-[var(--color-bg-secondary)] px-1.5 py-0.5 rounded text-[var(--color-accent)]">{code}</code>
+      <code className="rounded bg-[var(--color-bg-muted)] px-1.5 py-0.5 font-mono text-[11px] text-[var(--color-accent)]">{code}</code>
       <button onClick={handleCopy} className="p-0.5 hover:text-[var(--color-accent)] text-[var(--color-text-muted)] transition-colors" title="复制">
         <Copy className="w-3 h-3" />
       </button>
@@ -159,7 +159,7 @@ export function CdpUrlCell({ debugReady, debugPort }: CdpUrlCellProps) {
   return (
     <div className="flex min-w-0 items-center gap-1">
       <code
-        className="max-w-[220px] truncate text-xs font-mono bg-[var(--color-bg-secondary)] px-1.5 py-0.5 rounded text-[var(--color-accent)]"
+        className="max-w-[220px] truncate rounded bg-[var(--color-bg-muted)] px-1.5 py-0.5 font-mono text-[11px] text-[var(--color-accent)]"
         title={cdpUrl}
       >
         {cdpUrl}

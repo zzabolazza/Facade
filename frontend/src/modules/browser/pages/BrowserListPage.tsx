@@ -409,41 +409,44 @@ export function BrowserListPage() {
     }
   }
 
+  const proxyErrorCount = proxies.filter(proxy => proxy.lastTestedAt && proxy.lastTestOk === false).length
 
   return (
-    <div className="overflow-auto p-5 space-y-5 animate-fade-in h-full">
-      <BrowserListHeader
-        profileCount={profiles.length}
-        filteredProfileCount={filteredProfiles.length}
-        runningCount={runningCount}
-        viewMode={viewMode}
-        proxies={proxies}
-        cores={cores}
-        groups={groups}
-        allTags={allTags}
-        filters={filters}
-        onFiltersChange={setFilters}
-        onRefresh={() => { void loadProfiles() }}
-        onImportProfiles={handleImportProfiles}
-        onOpenBackup={() => setBackupModalOpen(true)}
-        importingProfiles={profilePackageBusy}
-        onViewModeChange={setViewMode}
-      />
+    <div className="h-full overflow-auto pb-5 animate-fade-in">
+      <div className="space-y-4">
+        <BrowserListHeader
+          profileCount={profiles.length}
+          filteredProfileCount={filteredProfiles.length}
+          runningCount={runningCount}
+          errorProfileCount={proxyErrorCount}
+          viewMode={viewMode}
+          proxies={proxies}
+          cores={cores}
+          groups={groups}
+          allTags={allTags}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onRefresh={() => { void loadProfiles() }}
+          onImportProfiles={handleImportProfiles}
+          onOpenBackup={() => setBackupModalOpen(true)}
+          importingProfiles={profilePackageBusy}
+          onViewModeChange={setViewMode}
+        />
 
-      {/* 批量操作工具栏 */}
-      <BatchToolbar
-        selectedCount={selectedIds.size}
-        totalCount={filteredProfiles.length}
-        onSelectAll={handleSelectAll}
-        onDeselectAll={handleDeselectAll}
-        onBatchStart={handleBatchStart}
-        onBatchStop={handleBatchStop}
-        onBatchExport={handleBatchExport}
-        onOpenBackup={() => setBackupModalOpen(true)}
-        onBatchDelete={openBatchDeleteConfirm}
-        batchLoading={batchLoading}
-        exporting={profilePackageBusy}
-      />
+        {/* 批量操作工具栏 */}
+        <BatchToolbar
+          selectedCount={selectedIds.size}
+          totalCount={filteredProfiles.length}
+          onSelectAll={handleSelectAll}
+          onDeselectAll={handleDeselectAll}
+          onBatchStart={handleBatchStart}
+          onBatchStop={handleBatchStop}
+          onBatchExport={handleBatchExport}
+          onOpenBackup={() => setBackupModalOpen(true)}
+          onBatchDelete={openBatchDeleteConfirm}
+          batchLoading={batchLoading}
+          exporting={profilePackageBusy}
+        />
 
       <BrowserBackupModal
         open={backupModalOpen}
@@ -542,6 +545,7 @@ export function BrowserListPage() {
         opError={opError}
         onCloseOpError={() => setOpError('')}
       />
+      </div>
     </div>
   )
 }

@@ -48,84 +48,46 @@ export function InstanceFilterBar({ filters, onChange, proxies, cores, allTags, 
   const activeCount = [searchValue, filters.status, filters.proxyId, filters.coreId, filters.groupId].filter(Boolean).length + filters.tags.size
 
   return (
-    <div className="space-y-2">
-      <div
-        className="flex items-center gap-1.5 cursor-pointer select-none text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
+    <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+      <button
+        type="button"
+        className="flex h-8 items-center gap-1.5 rounded-md border border-[var(--color-border-default)] bg-[var(--color-bg-muted)] px-2.5 text-xs font-medium text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-primary)]"
         onClick={() => setCollapsed(prev => !prev)}
       >
-        {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        <Filter className="w-3.5 h-3.5" />
-        <span>筛选</span>
-        {collapsed && activeCount > 0 && (
-          <span className="ml-1 px-1.5 py-0.5 text-[10px] font-medium bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded-full">
+        {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+        <Filter className="h-3.5 w-3.5" />
+        筛选
+        {activeCount > 0 && (
+          <span className="rounded-full bg-[var(--color-accent-muted)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-accent)]">
             {activeCount}
           </span>
         )}
-      </div>
+      </button>
 
       {!collapsed && (
         <>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Input
-              value={searchValue}
-              onChange={e => onChange({ ...filters, keyword: e.target.value, kwSearch: '' })}
-              placeholder="搜索名称/快捷码/关键字..."
-              className="flex-1 min-w-[220px]"
-            />
-            <Select
-              value={filters.status}
-              onChange={e => set('status', e.target.value as InstanceFilters['status'])}
-              options={[
-                { value: '', label: '全部状态' },
-                { value: 'running', label: '运行中' },
-                { value: 'stopped', label: '已停止' },
-              ]}
-              style={{ width: '120px' }}
-            />
-            <Select
-              value={filters.proxyId}
-              onChange={e => set('proxyId', e.target.value)}
-              options={[
-                { value: '', label: '全部代理' },
-                { value: '__none__', label: '无代理' },
-                ...proxies.map(p => ({ value: p.proxyId, label: p.proxyName || p.proxyId })),
-              ]}
-              style={{ width: '150px' }}
-            />
-            <Select
-              value={filters.coreId}
-              onChange={e => set('coreId', e.target.value)}
-              options={[
-                { value: '', label: '全部内核' },
-                ...cores.map(c => ({ value: c.coreId, label: c.coreName })),
-              ]}
-              style={{ width: '140px' }}
-            />
-            <Select
-              value={filters.groupId}
-              onChange={e => set('groupId', e.target.value)}
-              options={[
-                { value: '', label: '全部分组' },
-                { value: '__ungrouped__', label: '未分组' },
-                ...groups.map(g => ({ value: g.groupId, label: g.groupName })),
-              ]}
-              style={{ width: '140px' }}
-            />
-            {hasFilter && (
-              <button
-                onClick={() => onChange({ ...EMPTY_FILTERS, tags: new Set() })}
-                className="flex items-center gap-1 px-2 py-1 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-error)] hover:bg-[var(--color-bg-muted)] rounded transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-                清除
-              </button>
-            )}
-          </div>
-          <TagFilterBar
-            tags={allTags}
-            selected={filters.tags}
-            onChange={tags => set('tags', tags)}
+          <Input
+            value={searchValue}
+            onChange={e => onChange({ ...filters, keyword: e.target.value, kwSearch: '' })}
+            placeholder="搜索名称 / 快捷码 / 关键字..."
+            className="h-8 min-w-[220px] flex-1 text-xs"
           />
+          <Select value={filters.status} onChange={e => set('status', e.target.value as InstanceFilters['status'])} options={[{ value: '', label: '全部状态' }, { value: 'running', label: '运行中' }, { value: 'stopped', label: '已停止' }]} className="h-8 w-[118px] text-xs" />
+          <Select value={filters.proxyId} onChange={e => set('proxyId', e.target.value)} options={[{ value: '', label: '全部代理' }, { value: '__none__', label: '无代理' }, ...proxies.map(p => ({ value: p.proxyId, label: p.proxyName || p.proxyId }))]} className="h-8 w-[148px] text-xs" />
+          <Select value={filters.coreId} onChange={e => set('coreId', e.target.value)} options={[{ value: '', label: '全部内核' }, ...cores.map(c => ({ value: c.coreId, label: c.coreName }))]} className="h-8 w-[138px] text-xs" />
+          <Select value={filters.groupId} onChange={e => set('groupId', e.target.value)} options={[{ value: '', label: '全部分组' }, { value: '__ungrouped__', label: '未分组' }, ...groups.map(g => ({ value: g.groupId, label: g.groupName }))]} className="h-8 w-[138px] text-xs" />
+          {hasFilter && (
+            <button
+              onClick={() => onChange({ ...EMPTY_FILTERS, tags: new Set() })}
+              className="flex h-8 items-center gap-1 rounded-md px-2 text-xs text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-bg-muted)] hover:text-[var(--color-error)]"
+            >
+              <X className="h-3.5 w-3.5" />
+              清除
+            </button>
+          )}
+          <div className="basis-full">
+            <TagFilterBar tags={allTags} selected={filters.tags} onChange={tags => set('tags', tags)} />
+          </div>
         </>
       )}
     </div>

@@ -100,17 +100,20 @@ export function Table<T extends Record<string, any>>({
 
   return (
     <div
-      className={clsx('overflow-auto', className)}
+      className={clsx(
+        'overflow-auto rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)]',
+        className
+      )}
       style={{ maxHeight }}
     >
-      <table className="min-w-full">
+      <table className="min-w-full border-collapse">
         <thead className={clsx(stickyHeader && 'sticky top-0 z-10')}>
           <tr>
             {columns.map((col) => (
               <th
                 key={col.key}
                 className={clsx(
-                  'px-4 py-3 text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-wider bg-[var(--color-bg-muted)]',
+                  'px-3.5 py-2.5 text-[11px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.04em] bg-[var(--color-bg-subtle)] border-b border-[var(--color-border-default)]',
                   col.align === 'center' && 'text-center',
                   col.align === 'right' && 'text-right',
                   !col.align && 'text-left',
@@ -146,7 +149,7 @@ export function Table<T extends Record<string, any>>({
               <tr
                 key={getRowKey(record, index)}
                 className={clsx(
-                  'hover:bg-[var(--color-bg-muted)]/50 transition-colors duration-150',
+                  'hover:bg-[var(--color-bg-subtle)] transition-colors duration-150',
                   onRowClick && 'cursor-pointer'
                 )}
                 onClick={() => onRowClick?.(record)}
@@ -155,7 +158,7 @@ export function Table<T extends Record<string, any>>({
                   <td
                     key={col.key}
                     className={clsx(
-                      'px-4 py-3.5 text-sm text-[var(--color-text-secondary)]',
+                      'px-3.5 py-3 text-[13px] text-[var(--color-text-secondary)]',
                       col.align === 'center' && 'text-center',
                       col.align === 'right' && 'text-right'
                     )}

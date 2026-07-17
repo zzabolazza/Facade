@@ -1,8 +1,10 @@
 ﻿import { useState, useRef, useEffect } from 'react'
-import { Bell, BookOpen, Check, Trash2, Info, AlertCircle, CheckCircle } from 'lucide-react'
+import { useLocation } from 'react-router-dom'
+import { Bell, BookOpen, Check, Trash2, Info, AlertCircle, CheckCircle, Moon, Search } from 'lucide-react'
 import clsx from 'clsx'
 import { useNotificationStore, type Notification } from '../../store/notificationStore'
 import { DocsCenterModal } from './DocsCenterModal'
+import { navigationConfig } from '../../config'
 
 function NotificationDropdown({
   notifications,
@@ -28,7 +30,6 @@ function NotificationDropdown({
 
   return (
     <div className="absolute right-0 top-full mt-2 w-80 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl shadow-xl overflow-hidden z-50 animate-fade-in">
-      {/* Header */}
       <div className="px-4 py-3 border-b border-[var(--color-border-muted)] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-[var(--color-text-primary)]">异常与通知</span>
@@ -58,7 +59,6 @@ function NotificationDropdown({
         </div>
       </div>
 
-      {/* Notification List */}
       <div className="max-h-80 overflow-y-auto">
         {notifications.length === 0 ? (
           <div className="py-8 text-center text-[var(--color-text-muted)]">
@@ -72,7 +72,7 @@ function NotificationDropdown({
               onClick={() => onMarkAsRead(notification.id)}
               className={clsx(
                 'px-4 py-3 border-b border-[var(--color-border-muted)] last:border-0 cursor-pointer transition-colors hover:bg-[var(--color-bg-muted)]',
-                !notification.read && 'bg-[var(--color-accent)]/5'
+                !notification.read && 'bg-[var(--color-accent-muted)]'
               )}
             >
               <div className="flex gap-3">
@@ -104,9 +104,8 @@ function NotificationDropdown({
         )}
       </div>
 
-      {/* Footer */}
       {notifications.length > 0 && (
-        <div className="px-4 py-2 border-t border-[var(--color-border-muted)] bg-[var(--color-bg-muted)]/50">
+        <div className="px-4 py-2 border-t border-[var(--color-border-muted)] bg-[var(--color-bg-muted)]">
           <button className="w-full text-xs text-center text-[var(--color-accent)] hover:underline">
             查看全部通知
           </button>
@@ -116,11 +115,24 @@ function NotificationDropdown({
   )
 }
 
+function getRouteMeta(pathname: string) {
+  const primary = navigationConfig.find((item) =>
+    pathname === item.path || (item.path !== '/' && pathname.startsWith(`${item.path}/`)),
+  )
+  if (primary) return { title: primary.name, path: primary.path }
+  if (pathname.startsWith('/browser/detail/')) return { title: '实例详情', path: pathname }
+  if (pathname.startsWith('/browser/edit/')) return { title: '编辑实例', path: pathname }
+  if (pathname.startsWith('/browser/copy/')) return { title: '复制实例', path: pathname }
+  return { title: 'Ant Browser', path: pathname || '/' }
+}
+
 export function Topbar() {
   const [showNotifications, setShowNotifications] = useState(false)
   const [docsOpen, setDocsOpen] = useState(false)
   const { notifications, markAsRead, markAllAsRead, clearNotifications } = useNotificationStore()
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const location = useLocation()
+  const routeMeta = getRouteMeta(location.pathname)
 
   const unreadCount = notifications.filter(n => !n.read).length
 
@@ -136,12 +148,24 @@ export function Topbar() {
   }, [])
 
   return (
-    <header className="h-14 bg-[var(--color-bg-surface)] border-b border-[var(--color-border-default)] px-4 flex items-center justify-between gap-4">
-      <div className="flex-1" />
+    <header className="flex h-14 shrink-0 items-center gap-3 border-b border-[var(--color-border-default)] bg-[var(--color-bg-surface)] px-5">
+      <div className="flex min-w-0 items-baseline gap-2">
+        <div className="truncate text-[15px] font-bold text-[var(--color-text-primary)]">
+          {routeMeta.title}
+        </div>
+        <div className="hidden truncate text-xs font-medium text-[var(--color-text-muted)] sm:block">
+          {routeMeta.path}
+        </div>
+      </div>
 
-      {/* 右侧操作 */}
+      <div
+        className="ml-auto hidden h-9 w-[260px] items-center gap-2 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-base)] px-3 text-left text-[12.5px] text-[var(--color-text-muted)] lg:flex"
+      >
+        <Search className="h-3.5 w-3.5" />
+        <span className="min-w-0 flex-1 truncate">搜索实例 / 分组 / 标签...</span>
+      </div>
+
       <div className="flex items-center gap-1">
-        {/* 通知按钮 */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setShowNotifications(!showNotifications)}
@@ -182,6 +206,17 @@ export function Topbar() {
         >
           <BookOpen className="w-4 h-4" />
         </button>
+
+        <div
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-muted)]"
+          aria-hidden="true"
+        >
+          <Moon className="h-4 w-4" />
+        </div>
+
+        <div className="ml-1 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#7c5cff] to-[#4b6eff] text-xs font-bold text-white">
+          AB
+        </div>
       </div>
 
       <DocsCenterModal open={docsOpen} onClose={() => setDocsOpen(false)} />

@@ -17,18 +17,18 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
-  const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2'
+  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2'
   
   const variants = {
-    primary: 'bg-[var(--color-accent)] text-[var(--color-text-inverse)] hover:opacity-90 focus-visible:ring-[var(--color-accent)]',
-    secondary: 'bg-[var(--color-bg-surface)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)] hover:bg-[var(--color-bg-muted)] hover:border-[var(--color-border-strong)] focus-visible:ring-[var(--color-border-strong)]',
+    primary: 'bg-[var(--color-accent)] text-[var(--color-text-inverse)] shadow-[var(--shadow-sm)] hover:bg-[var(--color-accent-hover)] focus-visible:ring-[var(--color-accent)]',
+    secondary: 'bg-[var(--color-bg-surface)] text-[var(--color-text-primary)] border border-[var(--color-border-default)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-bg-subtle)] focus-visible:ring-[var(--color-border-strong)]',
     danger: 'bg-[var(--color-error)] text-white hover:opacity-90 focus-visible:ring-[var(--color-error)]',
-    ghost: 'text-[var(--color-text-secondary)] hover:bg-[var(--color-accent-muted)] hover:text-[var(--color-text-primary)]',
+    ghost: 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-muted)] hover:text-[var(--color-text-primary)]',
   }
 
   const sizes = {
     sm: 'h-8 px-3 text-xs gap-1.5',
-    md: 'h-9 px-4 text-sm gap-2',
+    md: 'h-9 px-4 text-[13px] gap-2',
     lg: 'h-10 px-5 text-sm gap-2',
   }
 

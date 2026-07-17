@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { Copy, Download, Key, Loader2, MoreHorizontal, Play, Puzzle, Repeat2, RotateCcw, Settings, Square, Trash2, Wifi } from 'lucide-react'
 
-import { Badge, Button, Card, Table } from '../../../shared/components'
+import { Badge, Button, Table } from '../../../shared/components'
 import type { TableColumn } from '../../../shared/components/Table'
 
 import type { BrowserCore, BrowserProfile, BrowserProxy, ProxySpeedTestResult } from '../types'
@@ -213,10 +213,9 @@ function ProfileMoreActions({
         onClick={onToggle}
         title="更多"
         disabled={disabled}
-        className="px-2"
+        className="h-7 w-7 px-0"
       >
-        <MoreHorizontal className="w-3.5 h-3.5" />
-        更多
+        <MoreHorizontal className="h-3.5 w-3.5" />
       </Button>
     </div>
       {open && createPortal(
@@ -264,6 +263,47 @@ function ProfileMoreActions({
   )
 }
 
+function EditProfileAction({
+  profileId,
+  disabled,
+  compact = false,
+}: {
+  profileId: string
+  disabled: boolean
+  compact?: boolean
+}) {
+  const iconClassName = compact ? 'w-3.5 h-3.5' : 'w-4 h-4 mr-1.5'
+  const linkClassName = compact
+    ? 'inline-flex h-7 w-7 items-center justify-center rounded-lg px-0 text-xs font-semibold text-[var(--color-text-secondary)] transition-all duration-150 hover:bg-[var(--color-bg-muted)] hover:text-[var(--color-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-border-strong)]'
+    : 'inline-flex h-8 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-[var(--color-text-secondary)] transition-all duration-150 hover:bg-[var(--color-bg-muted)] hover:text-[var(--color-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-border-strong)]'
+
+  if (disabled) {
+    return (
+      <Button
+        size="sm"
+        variant="ghost"
+        title="配置"
+        className={compact ? 'h-7 w-7 px-0' : 'px-3'}
+        disabled
+      >
+        <Settings className={iconClassName} />
+        {!compact && '配置'}
+      </Button>
+    )
+  }
+
+  return (
+    <Link
+      to={`/browser/edit/${profileId}`}
+      title="配置"
+      className={linkClassName}
+    >
+      <Settings className={iconClassName} />
+      {!compact && '配置'}
+    </Link>
+  )
+}
+
 function BrowserProfileCard({
   profile,
   proxy,
@@ -305,11 +345,11 @@ function BrowserProfileCard({
 }) {
   return (
     <div
-      className={`flex flex-col border rounded-xl bg-[var(--color-bg-surface)] p-3 shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition-all duration-200 h-[320px] overflow-hidden
-        ${isSelected ? 'border-[var(--color-accent)] ring-1 ring-[var(--color-accent)]/20' : 'border-[var(--color-border-default)] hover:border-[var(--color-accent)]'}
+      className={`flex h-[300px] flex-col overflow-hidden rounded-[10px] border bg-[var(--color-bg-surface)] p-3 transition-colors duration-150
+        ${isSelected ? 'border-[var(--color-accent)] ring-1 ring-[rgb(75_110_255_/_0.2)]' : 'border-[var(--color-border-default)] hover:border-[var(--color-border-strong)]'}
       `}
     >
-      <div className="flex flex-col gap-3 pb-3 border-b border-[var(--color-border-muted)]/50 shrink-0">
+      <div className="flex flex-col gap-3 pb-3 border-b border-[var(--color-border-muted)] shrink-0">
         <div className="flex justify-between items-start gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <input
@@ -318,7 +358,7 @@ function BrowserProfileCard({
               checked={isSelected}
               onChange={() => onToggleSelect(profile.profileId)}
             />
-            <Link className="text-[var(--color-accent)] font-medium text-sm hover:text-[var(--color-accent)] transition-colors truncate max-w-[200px]" to={`/browser/detail/${profile.profileId}`}>
+            <Link className="max-w-[200px] truncate text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-accent)] hover:underline" to={`/browser/detail/${profile.profileId}`}>
               {profile.profileName}
             </Link>
             {profile.tags && profile.tags.length > 0 && (
@@ -349,7 +389,7 @@ function BrowserProfileCard({
           <Button size="sm" variant="ghost" onClick={() => onRestart(profile.profileId)} title="重启" className="px-3" disabled={isBusy}><RotateCcw className="w-4 h-4 mr-1.5" />重启</Button>
           <Button size="sm" variant="ghost" onClick={() => onOpenKeywords(profile)} title="关键字管理" className="px-3" disabled={isBusy}><Key className="w-4 h-4 mr-1.5" />关键字</Button>
           <Button size="sm" variant="ghost" onClick={() => onOpenExtensions(profile)} title="插件配置" className="px-3" disabled={isBusy}><Puzzle className="w-4 h-4 mr-1.5" />插件</Button>
-          <Link to={`/browser/edit/${profile.profileId}`}><Button size="sm" variant="ghost" title="配置" className="px-3" disabled={isBusy}><Settings className="w-4 h-4 mr-1.5" />配置</Button></Link>
+          <EditProfileAction profileId={profile.profileId} disabled={isBusy} />
           <Button size="sm" variant="ghost" onClick={() => onOpenCopy(profile)} title="克隆" className="px-3" disabled={isBusy}><Copy className="w-4 h-4 mr-1.5" />克隆</Button>
           <Button size="sm" variant="ghost" onClick={() => onDelete(profile.profileId)} title="删除" className="px-3 text-red-500 hover:text-red-600 hover:bg-red-50" disabled={isBusy}><Trash2 className="w-4 h-4 mr-1.5" />删除</Button>
         </div>
@@ -384,7 +424,7 @@ function BrowserProfileCard({
         </div>
       </div>
 
-      <div className="border-t border-[var(--color-border-muted)]/50 pt-2 flex items-start gap-2 flex-1 min-h-0">
+      <div className="border-t border-[var(--color-border-muted)] pt-2 flex items-start gap-2 flex-1 min-h-0">
         <span className="text-xs font-medium text-[var(--color-text-primary)] shrink-0 pt-0.5">系统关键字</span>
         <div className="flex-1 min-h-0 overflow-y-auto pr-1">
           <KeywordInlineRow keywords={profile.keywords || []} />
@@ -462,7 +502,7 @@ export function BrowserProfilesPanel({
       width: 320,
       render: (value, record) => (
         <div className="flex min-w-[260px] flex-col gap-1">
-          <Link className="block truncate whitespace-nowrap text-[var(--color-accent)] text-sm font-medium hover:underline" to={`/browser/detail/${record.profileId}`} title={String(value || '')}>
+          <Link className="block truncate whitespace-nowrap text-sm font-semibold text-[var(--color-text-primary)] transition-colors hover:text-[var(--color-accent)] hover:underline" to={`/browser/detail/${record.profileId}`} title={String(value || '')}>
             {value}
           </Link>
           {record.tags && record.tags.length > 0 && (
@@ -532,16 +572,16 @@ export function BrowserProfilesPanel({
         return (
           <div className="flex justify-end gap-1.5 whitespace-nowrap">
             {record.running ? (
-              <Button size="sm" variant="secondary" onClick={() => onStop(record.profileId)} title="停止" loading={isStopping}>
+              <Button size="sm" variant="secondary" className="h-7 w-7 px-0" onClick={() => onStop(record.profileId)} title="停止" loading={isStopping}>
                 {!isStopping && <Square className="w-3.5 h-3.5" />}
               </Button>
             ) : (
-              <Button size="sm" onClick={() => onStart(record.profileId)} title="启动" loading={isStarting}>
+              <Button size="sm" className="h-7 w-7 px-0" onClick={() => onStart(record.profileId)} title="启动" loading={isStarting}>
                 {!isStarting && <Play className="w-3.5 h-3.5 fill-current" />}
               </Button>
             )}
-            <Link to={`/browser/edit/${record.profileId}`}><Button size="sm" variant="ghost" title="配置" disabled={isBusy}><Settings className="w-3.5 h-3.5" /></Button></Link>
-            <Button size="sm" variant="ghost" onClick={() => onOpenCopy(record)} title="克隆" disabled={isBusy}><Copy className="w-3.5 h-3.5" /></Button>
+            <EditProfileAction profileId={record.profileId} disabled={isBusy} compact />
+            <Button size="sm" variant="ghost" className="h-7 w-7 px-0" onClick={() => onOpenCopy(record)} title="克隆" disabled={isBusy}><Copy className="w-3.5 h-3.5" /></Button>
             <ProfileMoreActions
               open={isMoreOpen}
               disabled={isBusy}
@@ -552,7 +592,7 @@ export function BrowserProfilesPanel({
               onOpenExtensions={() => onOpenExtensions(record)}
               onExport={() => onExport(record)}
             />
-            <Button size="sm" variant="ghost" onClick={() => onDelete(record.profileId)} title="删除" disabled={isBusy}><Trash2 className="w-3.5 h-3.5 text-red-500" /></Button>
+            <Button size="sm" variant="ghost" className="h-7 w-7 px-0" onClick={() => onDelete(record.profileId)} title="删除" disabled={isBusy}><Trash2 className="w-3.5 h-3.5 text-red-500" /></Button>
           </div>
         )
       },
@@ -560,8 +600,8 @@ export function BrowserProfilesPanel({
   ]
 
   return (
-    <Card padding="none">
-      <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+    <div className="rounded-[10px] bg-[var(--color-bg-surface)]">
+      <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 340px)' }}>
         {loading ? (
           <div className="py-16 flex items-center justify-center text-sm text-[var(--color-text-muted)]">加载中...</div>
         ) : profiles.length === 0 ? (
@@ -601,6 +641,6 @@ export function BrowserProfilesPanel({
           </div>
         )}
       </div>
-    </Card>
+    </div>
   )
 }

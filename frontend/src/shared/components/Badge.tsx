@@ -14,17 +14,17 @@ interface BadgeProps {
 }
 
 const variantStyles = {
-  default: 'bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)]',
-  success: 'bg-[var(--color-success)]/15 text-[var(--color-success)]',
-  error: 'bg-[var(--color-error)]/15 text-[var(--color-error)]',
-  warning: 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]',
-  info: 'bg-[var(--color-accent)]/15 text-[var(--color-accent)]',
+  default: 'bg-[var(--color-bg-muted)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]',
+  success: 'bg-[rgb(22_199_132_/_0.12)] text-[var(--color-success)] border border-[rgb(22_199_132_/_0.2)]',
+  error: 'bg-[rgb(239_71_87_/_0.12)] text-[var(--color-error)] border border-[rgb(239_71_87_/_0.2)]',
+  warning: 'bg-[rgb(245_165_36_/_0.12)] text-[var(--color-warning)] border border-[rgb(245_165_36_/_0.2)]',
+  info: 'bg-[rgb(75_110_255_/_0.12)] text-[var(--color-accent)] border border-[rgb(75_110_255_/_0.2)]',
 }
 
 const sizeStyles = {
-  sm: 'px-1.5 py-0.5 text-xs',
-  md: 'px-2 py-1 text-xs',
-  lg: 'px-2.5 py-1 text-sm',
+  sm: 'px-1.5 py-0.5 text-[10.5px]',
+  md: 'px-2 py-0.5 text-[11px]',
+  lg: 'px-2.5 py-1 text-xs',
 }
 
 const dotStyles = {
@@ -46,7 +46,7 @@ export function Badge({
   return (
     <span
       className={clsx(
-        'inline-flex items-center gap-1.5 rounded-full font-medium',
+        'inline-flex items-center gap-1.5 rounded-md font-medium',
         variantStyles[variant],
         sizeStyles[size],
         className
