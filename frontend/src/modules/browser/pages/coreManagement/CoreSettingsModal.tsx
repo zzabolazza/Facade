@@ -26,11 +26,12 @@ export function CoreSettingsModal({ open, form, saving, setForm, onClose, onSave
       }
     >
       <div className="space-y-4">
-        <FormItem label="用户数据根目录">
+        <FormItem label="用户数据根目录" hint="绝对路径，默认位于用户状态目录下的 data">
           <Input
             value={form.userDataRoot}
             onChange={e => setForm(prev => ({ ...prev, userDataRoot: e.target.value }))}
-            placeholder="例如：data"
+            placeholder="例如：/Users/you/Library/Application Support/ant-browser/data"
+            className="font-mono text-[12.5px]"
           />
         </FormItem>
         <FormItem label="默认指纹参数">

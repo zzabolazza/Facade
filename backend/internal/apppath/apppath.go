@@ -2,7 +2,6 @@ package apppath
 
 import (
 	"ant-chrome/backend/internal/fsutil"
-	"io"
 	"os"
 	"path/filepath"
 	goruntime "runtime"
@@ -30,13 +29,13 @@ func StateRoot(appRoot string) string {
 	return detect(appRoot).stateRoot
 }
 
-// IsDetached 返回当前是否启用了“安装目录只读、状态目录独立”的模式。
+// IsDetached 返回当前是否将可写状态放到独立于安装/项目目录的用户状态根。
 func IsDetached(appRoot string) bool {
 	return detect(appRoot).detached
 }
 
 // Resolve 将相对路径解析到安装目录或用户状态目录。
-// 已安装的 Linux / macOS 应用在启用 detached 模式后，除 bin/ 外的相对路径都会落到用户可写目录。
+// 在 detached 模式下，除 bin/ 外的相对路径都会落到用户可写状态目录。
 func Resolve(appRoot, p string) string {
 	return resolveForOS(appRoot, p, goruntime.GOOS)
 }
@@ -89,12 +88,6 @@ func ensureWritableLayoutForOS(appRoot, goos string) error {
 	); err != nil {
 		return err
 	}
-	if err := copyDirIfMissing(
-		filepath.Join(root.installRoot, "chrome"),
-		filepath.Join(root.stateRoot, "chrome"),
-	); err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -132,11 +125,10 @@ func normalizeGOOS(goos string) string {
 }
 
 func shouldDetachStateRoot(goos, installRoot string) bool {
+	_ = installRoot
 	switch normalizeGOOS(goos) {
-	case "linux":
-		return !dirWritable(installRoot)
-	case "darwin":
-		return isMacAppBundleRoot(installRoot) || !dirWritable(installRoot)
+	case "linux", "darwin", "windows":
+		return true
 	default:
 		return false
 	}
@@ -171,6 +163,13 @@ func userStateRootForOS(goos, fallback string) string {
 		if home := configuredHomeDir(); home != "" {
 			return filepath.Join(home, "Library", "Application Support", appStateDirName)
 		}
+	case "windows":
+		if base := strings.TrimSpace(os.Getenv("LOCALAPPDATA")); base != "" {
+			return filepath.Join(base, appStateDirName)
+		}
+		if home := configuredHomeDir(); home != "" {
+			return filepath.Join(home, "AppData", "Local", appStateDirName)
+		}
 	}
 	if tmp := strings.TrimSpace(os.TempDir()); tmp != "" {
 		return filepath.Join(tmp, appStateDirName)
@@ -186,23 +185,6 @@ func configuredHomeDir() string {
 		return strings.TrimSpace(home)
 	}
 	return ""
-}
-
-func isMacAppBundleRoot(dir string) bool {
-	clean := strings.TrimSuffix(filepath.ToSlash(filepath.Clean(dir)), "/")
-	lower := strings.ToLower(clean)
-	return strings.HasSuffix(lower, ".app/contents/macos") || strings.HasSuffix(lower, ".app/contents/resources")
-}
-
-func dirWritable(dir string) bool {
-	file, err := os.CreateTemp(dir, ".ant-browser-write-test-*")
-	if err != nil {
-		return false
-	}
-	name := file.Name()
-	_ = file.Close()
-	_ = os.Remove(name)
-	return true
 }
 
 func useStateRoot(p string) bool {
@@ -232,65 +214,4 @@ func copyFileIfMissing(src, dst string) error {
 		return err
 	}
 	return os.WriteFile(dst, data, 0644)
-}
-
-func copyDirIfMissing(src, dst string) error {
-	if _, err := os.Stat(dst); err == nil {
-		return nil
-	} else if !os.IsNotExist(err) {
-		return err
-	}
-
-	info, err := os.Stat(src)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		return err
-	}
-	if !info.IsDir() {
-		return nil
-	}
-
-	return filepath.Walk(src, func(path string, info os.FileInfo, walkErr error) error {
-		if walkErr != nil {
-			return walkErr
-		}
-		rel, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
-		target := dst
-		if rel != "." {
-			target = filepath.Join(dst, rel)
-		}
-		if info.IsDir() {
-			dirMode := info.Mode().Perm() | 0700
-			return os.MkdirAll(target, dirMode)
-		}
-		return copyFile(path, target, info.Mode().Perm())
-	})
-}
-
-func copyFile(src, dst string, mode os.FileMode) error {
-	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-		return err
-	}
-
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer in.Close()
-
-	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	if _, err := io.Copy(out, in); err != nil {
-		return err
-	}
-	return out.Close()
 }

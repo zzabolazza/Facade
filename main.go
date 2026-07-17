@@ -150,7 +150,7 @@ func main() {
 	}
 	defer singleInstance.Close()
 	if startupDebugEnabled && backend.RuntimeUsesDetachedState(appRoot) {
-		log.Printf("检测到安装目录需要只读运行，状态目录切换到: %s", backend.RuntimeStateRoot(appRoot))
+		log.Printf("应用状态目录: %s", backend.RuntimeStateRoot(appRoot))
 	}
 	buildVersion := resolveBuildVersion()
 	if startupDebugEnabled {

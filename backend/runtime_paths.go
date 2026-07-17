@@ -17,7 +17,7 @@ func RuntimeStateRoot(appRoot string) string {
 	return apppath.StateRoot(appRoot)
 }
 
-// RuntimeUsesDetachedState 表示当前是否启用了“安装目录只读、状态目录独立”的模式。
+// RuntimeUsesDetachedState 表示是否使用独立于安装/项目目录的用户状态根目录。
 func RuntimeUsesDetachedState(appRoot string) bool {
 	return apppath.IsDetached(appRoot)
 }

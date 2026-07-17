@@ -18,7 +18,7 @@ export function nowISOString(): string {
 
 export function createDefaultBrowserSettings(): BrowserSettings {
   return {
-    userDataRoot: 'data',
+    userDataRoot: '',
     defaultFingerprintArgs: [],
     defaultLaunchArgs: [],
     defaultStartUrls: [],

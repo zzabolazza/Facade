@@ -47,22 +47,20 @@ The repository does not yet have:
 
 - signing / notarization flow
 
-The repository now includes the first macOS writable-state implementation for app bundle roots:
+The repository now includes writable-state handling for all platforms:
 
-- when the app root is inside `.app/Contents/MacOS` or `.app/Contents/Resources`
-- writable state is redirected to `~/Library/Application Support/ant-browser`
-- config, chrome, and data move to the user state root
+- development and packaged runs always use a home state root
+- macOS state root: `~/Library/Application Support/ant-browser`
+- config and `data/` live under the user state root
+- browser cores are user-registered; packages do not ship a `chrome/` placeholder
 
 ## Current Implementation Note
 
-The current initial macOS packaging scaffold intentionally places seed files under:
+The current macOS packaging scaffold places seed config under:
 
 - `Ant Browser.app/Contents/MacOS/config.yaml`
-- `Ant Browser.app/Contents/MacOS/chrome/README.md`
 
-This is not the prettiest final bundle layout, but it matches the current runtime path resolution and avoids a larger refactor in Phase 1.
-
-After the first internal build is stable, the bundle layout can be reviewed and moved toward `Contents/Resources` if needed.
+This matches runtime path resolution for the install root seed file, while writable state is redirected to Application Support.
 
 ## Why macOS Looks More Complex
 
@@ -108,7 +106,7 @@ Why:
 Recommended structure inside the built app:
 
 - `Ant Browser.app/Contents/MacOS/ant-chrome`
-- optional placeholder `chrome/README.md` if you want to keep behavior aligned with Linux
+- `Ant Browser.app/Contents/MacOS/config.yaml` (seed only; copied to state root on first launch if missing)
 
 ### User-Writable State
 
@@ -121,11 +119,11 @@ Recommended contents under the state root:
 - `config.yaml`
 - `proxies.yaml`
 - `data/`
-- `chrome/`
 
 Rule:
 
-- config, database, browser cores, logs, and profile data stay in the user state root
+- config, database, logs, extensions, and profile data stay in the user state root
+- browser cores are registered by the user and are not required under the state root
 
 ## Code Changes Required
 

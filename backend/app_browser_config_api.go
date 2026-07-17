@@ -13,20 +13,20 @@ import (
 
 func (a *App) GetBrowserSettings() BrowserSettings {
 	return BrowserSettings{
-		UserDataRoot:           a.config.Browser.UserDataRoot,
+		UserDataRoot:           a.resolveUserDataRootAbs(),
 		DefaultFingerprintArgs: append([]string{}, a.config.Browser.DefaultFingerprintArgs...),
 		DefaultLaunchArgs:      append([]string{}, a.config.Browser.DefaultLaunchArgs...),
 		DefaultStartURLs:       append([]string{}, a.config.Browser.DefaultStartURLs...),
 		LightStartEnabled:      browserLightStartEnabled(a.config),
 		RestoreLastSession:     a.config.Browser.RestoreLastSession,
-		StartReadyTimeoutMs: browserStartReadyTimeoutMillis(a.config),
-		StartStableWindowMs: browserStartStableWindowMillis(a.config),
+		StartReadyTimeoutMs:    browserStartReadyTimeoutMillis(a.config),
+		StartStableWindowMs:    browserStartStableWindowMillis(a.config),
 	}
 }
 
 func (a *App) SaveBrowserSettings(settings BrowserSettings) error {
 	log := logger.New("Browser")
-	a.config.Browser.UserDataRoot = strings.TrimSpace(settings.UserDataRoot)
+	a.config.Browser.UserDataRoot = a.normalizeUserDataRootInput(settings.UserDataRoot)
 	a.config.Browser.DefaultFingerprintArgs = append([]string{}, settings.DefaultFingerprintArgs...)
 	a.config.Browser.DefaultLaunchArgs = append([]string{}, settings.DefaultLaunchArgs...)
 	if settings.DefaultStartURLs != nil {
@@ -52,6 +52,28 @@ func (a *App) SaveBrowserSettings(settings BrowserSettings) error {
 		return err
 	}
 	return nil
+}
+
+func (a *App) resolveUserDataRootAbs() string {
+	root := strings.TrimSpace(a.config.Browser.UserDataRoot)
+	if root == "" {
+		root = "data"
+	}
+	if filepath.IsAbs(root) {
+		return filepath.Clean(root)
+	}
+	return a.resolveAppPath(root)
+}
+
+func (a *App) normalizeUserDataRootInput(raw string) string {
+	root := strings.TrimSpace(raw)
+	if root == "" {
+		return a.resolveAppPath("data")
+	}
+	if filepath.IsAbs(root) {
+		return filepath.Clean(root)
+	}
+	return a.resolveAppPath(root)
 }
 
 func (a *App) BrowserCoreList() []BrowserCore {

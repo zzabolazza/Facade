@@ -50,7 +50,10 @@ func TestProfilePackageImportCleansFinalDirWhenSaveFails(t *testing.T) {
 		UserDataDir: "source-1",
 	}}, map[string]string{"source-1/Default/Preferences": "{}"})
 
-	configPath := filepath.Join(app.appRoot, "config.yaml")
+	configPath := app.resolveAppPath("config.yaml")
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		t.Fatalf("prepare config dir failed: %v", err)
+	}
 	if err := os.WriteFile(configPath, []byte("blocked"), 0o444); err != nil {
 		t.Fatalf("prepare readonly config failed: %v", err)
 	}
@@ -74,6 +77,12 @@ func TestProfilePackageImportCleansFinalDirWhenSaveFails(t *testing.T) {
 
 func newProfilePackageImportTestApp(t *testing.T, profiles []browser.Profile, userDataFiles map[string]string) (*App, string) {
 	t.Helper()
+	// Isolate home state root so SaveProfiles cannot rewrite the developer's real config.yaml.
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(home, "xdg-data"))
+	t.Setenv("LOCALAPPDATA", filepath.Join(home, "AppData", "Local"))
+
 	root := t.TempDir()
 	cfg := config.DefaultConfig()
 	cfg.Browser.UserDataRoot = filepath.Join(root, "user-data")

@@ -71,6 +71,7 @@ Ant Browser 适合以下场景：
 
 - 完善 Linux 支持：补齐 Linux 环境下的开发、打包、安装、启动与运行链路，并持续修复安装版启动与退出稳定性问题
 - 补齐 macOS unsigned 内测构建链路：支持在原生 macOS 主机上打包 `.app` / `.zip`，并将用户状态目录放到 `~/Library/Application Support/ant-browser`
+- 开发与安装版均将应用状态与实例数据写入用户 home 下的状态根目录，不再写入项目目录
 - 新增 SOCKS 代理测试支持：SOCKS 代理能力已进入测试阶段，后续会继续验证稳定性与兼容性
 - 实验性支持接口触发浏览器：支持通过接口启动浏览器实例，便于外部系统接入
 
@@ -78,8 +79,20 @@ Ant Browser 适合以下场景：
 
 ## 源码分支说明
 
-- `master`：面向开发者的干净基线分支，不提交 `data/app.db`、实例目录或其他用户数据。首次启动时会自动初始化空数据库。
-- `user_data`：在 `master` 基础上额外提交一份 `data/app.db` 测试快照，便于演示、联调和复现问题。
+- `master`：面向开发者的干净基线分支，不提交用户数据库、实例目录或其他运行时数据。首次启动时会在用户状态根目录自动初始化。
+- `user_data`：历史演示分支；运行时数据现已统一落到 home 状态根，不再依赖仓库内 `data/`。
+
+## 运行时数据目录
+
+开发和打包运行都会把可写状态放到用户目录（不写项目树）：
+
+| 平台 | 状态根目录 |
+|------|------------|
+| macOS | `~/Library/Application Support/ant-browser` |
+| Linux | `$XDG_DATA_HOME/ant-browser` 或 `~/.local/share/ant-browser` |
+| Windows | `%LOCALAPPDATA%\ant-browser` |
+
+其下包含 `config.yaml`、`proxies.yaml`、`data/app.db`、日志、扩展与各实例用户数据目录。浏览器内核由「内核管理」自行注册，不打包、也不再使用仓库内 `chrome/` 占位目录。
 
 ## 核心特性
 
@@ -156,30 +169,15 @@ Ant Browser 适合以下场景：
 
 1. 开发默认使用 `master` 分支；该分支不带测试用户数据，适合作为日常开发基线。
 2. 如需带测试库的演示环境，请切换到 `user_data` 分支。
-3. Windows 统一执行 `bat\dev.bat`；默认是 `live` 热更新模式，如需静态资源排查使用 `bat\dev.bat stable`，如需受限内存复现使用 `bat\dev.bat limited`。
+3. 在 macOS / Linux 上执行 `./dev.sh`；默认是 `stable` 静态资源模式，热更新开发使用 `./dev.sh live`。
 
 开发模式说明：
 
-- `bat\dev.bat`：默认 `live` 模式，启动 Vite watcher，并通过 `-frontenddevserverurl` 接入桌面壳
-- `bat\dev.bat stable`：先构建 `frontend/dist`，再以静态资源模式启动 Wails，不依赖外部 Vite dev server
-- `bat\dev.bat live`：显式指定 `live` 模式，效果与默认一致
-- `bat\dev.bat limited`：在 `live` 基础上为 watcher 与其子进程附加 Windows Job Object 内存限制
+- `./dev.sh` / `./dev.sh stable`：先构建 `frontend/dist`，再以静态资源模式启动 Wails，不依赖外部 Vite dev server
+- `./dev.sh live`：启动 Vite watcher，并通过 `-frontenddevserverurl` 接入桌面壳
 - 如需为依赖下载配置代理，可在启动前设置 `DEV_PROXY_URL`、`DEV_NO_PROXY`、`DEV_GOPROXY`
 
-
-### Windows 发布打包（源码）
-
-Windows 发布脚本默认保持原有 NSIS 安装包行为，也可以生成便携 ZIP，或一次生成两种产物：
-
-```powershell
-bat\publish.bat zip
-bat\publish.bat both
-bat\publish.bat -Target WINDOWS -WindowsFormat INSTALLER
-bat\publish.bat -Target WINDOWS -WindowsFormat PORTABLE
-bat\publish.bat -Target WINDOWS -WindowsFormat BOTH
-```
-
-省略 `-WindowsFormat` 时等同于 `INSTALLER`。`zip` 快捷命令只生成便携 ZIP，`both` 快捷命令同时生成安装包和便携 ZIP。安装包和便携 ZIP 输出到 `publish\output\`。
+源码开发与打包入口仅提供 macOS / Linux shell 脚本；Windows 请直接使用 Releases 安装包或便携包。
 
 ### Linux 发布打包（源码）
 
@@ -202,6 +200,21 @@ bash publish/mac/publish-mac.sh --arch arm64
 ```
 
 脚本会生成 unsigned `.app` 和 `.zip`，适合 PR 验证与内部测试。详细说明见 [publish/mac/README.md](publish/mac/README.md)。
+
+### 其他源码工具
+
+从现有用户数据目录补回丢失的实例配置：
+
+```bash
+go run ./backend/cmd/profile-recover --app-root '/path/to/Ant Browser'
+go run ./backend/cmd/profile-recover --app-root '/path/to/Ant Browser' --apply
+```
+
+生成 / 刷新 Wails 前端绑定：
+
+```bash
+wails generate module
+```
 
 ### 准备浏览器内核
 

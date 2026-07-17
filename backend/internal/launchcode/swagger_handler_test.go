@@ -29,6 +29,9 @@ func TestSwaggerRoutesServeUIAndSpec(t *testing.T) {
 	if !strings.Contains(body, "swagger-ui") {
 		t.Fatalf("GET /swagger/ body missing swagger-ui marker")
 	}
+	if !strings.Contains(body, "https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js") {
+		t.Fatalf("GET /swagger/ body missing external swagger-ui bundle")
+	}
 
 	spec := httptest.NewRecorder()
 	handler.ServeHTTP(spec, httptest.NewRequest(http.MethodGet, "/swagger/openapi.yaml", nil))
@@ -41,7 +44,7 @@ func TestSwaggerRoutesServeUIAndSpec(t *testing.T) {
 
 	bundle := httptest.NewRecorder()
 	handler.ServeHTTP(bundle, httptest.NewRequest(http.MethodGet, "/swagger/swagger-ui-bundle.js", nil))
-	if bundle.Code != http.StatusOK {
-		t.Fatalf("GET /swagger/swagger-ui-bundle.js status = %d, want %d", bundle.Code, http.StatusOK)
+	if bundle.Code != http.StatusNotFound {
+		t.Fatalf("GET /swagger/swagger-ui-bundle.js status = %d, want %d", bundle.Code, http.StatusNotFound)
 	}
 }

@@ -144,7 +144,13 @@ export function formatExtensionSource(value: string): string {
 }
 
 export function extensionStoreURL(item: BrowserExtension): string {
-  if (/^https?:\/\//i.test(item.sourceUrl)) return item.sourceUrl
-  if (/^[a-p]{32}$/i.test(item.extensionId)) return `https://chromewebstore.google.com/detail/${item.extensionId}`
+  const extensionId = (item.extensionId || '').trim().toLowerCase()
+  if (/^[a-p]{32}$/.test(extensionId)) {
+    return `https://chromewebstore.google.com/detail/${extensionId}`
+  }
+  const source = (item.sourceUrl || '').trim()
+  if (/^https?:\/\/(chromewebstore\.google\.com|chrome\.google\.com\/webstore)\//i.test(source)) {
+    return source
+  }
   return ''
 }

@@ -5,6 +5,7 @@ import type { BrowserExtension, BrowserGroupWithCount, BrowserProfile, BrowserPr
 import { fetchBrowserProfileExtensionSettings, saveBrowserProfileExtensionSettings } from '../api/extensions'
 import { fetchGroups } from '../api/groups'
 import { fetchBrowserProfiles } from '../api/profiles'
+import { BrowserOpenURL } from '../../../wailsjs/runtime/runtime'
 import { extensionHistoryActionLabel, formatExtensionTime, sameStringSet, type ExtensionHistoryRecord } from './extensionManagementUtils'
 
 const UNGROUPED_PROFILE_GROUP_ID = '__ungrouped__'
@@ -267,9 +268,9 @@ export function ExtensionHistoryModal({ open, records, onClose, onPick, onClear 
                       使用
                     </Button>
                     {record.storeUrl ? (
-                      <Button type="button" size="sm" variant="secondary" onClick={() => window.open(record.storeUrl, '_blank', 'noopener,noreferrer')}>
+                      <Button type="button" size="sm" variant="secondary" onClick={() => BrowserOpenURL(record.storeUrl)}>
                         <ExternalLink className="h-4 w-4" />
-                        商店页
+                        商店
                       </Button>
                     ) : null}
                   </div>

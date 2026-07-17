@@ -24,8 +24,6 @@ bash publish/linux/publish-linux.sh --arch amd64
 bash publish/linux/publish-linux.sh --arch arm64
 ```
 
-From Windows wrapper (`bat\publish.bat L`), Linux publish is executed through Docker Desktop using `publish/linux/linux-builder.Dockerfile`.
-
 Batch call:
 
 ```bash
@@ -34,10 +32,10 @@ bash publish/linux/publish-linux-all.sh
 
 ## Notes
 
-- Linux packages do **not** include browser cores (`chrome/` is not bundled).
+- Linux packages do **not** include browser cores.
 - Build on native architecture runner for stability.
 - `.deb` installs app files under `/opt/ant-browser`.
-- Linux packages keep an empty `chrome/` placeholder with `README.md`, but do **not** bundle browser core binaries.
+- Writable app state (config, database, profiles, logs) is stored under `~/.local/share/ant-browser` (or `$XDG_DATA_HOME/ant-browser`), not under `/opt/ant-browser`.
 - `.deb` registers an application launcher at `/usr/share/applications/ant-browser.desktop`.
 - `.deb` installs standard Linux desktop icons under `/usr/share/icons/hicolor/*/apps/ant-browser.png` and `/usr/share/pixmaps/ant-browser.png`, so menus and launchers are more likely to pick up the app icon correctly.
 - `.deb` bundles AppStream metadata under `/usr/share/metainfo/ant-browser.metainfo.xml`, which improves recognition in software centers and GUI `.deb` installers.

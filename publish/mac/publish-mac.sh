@@ -114,7 +114,6 @@ fi
 
 TARGET="darwin-$ARCH"
 APP_BIN_DIR="$ROOT_DIR/build/bin"
-CHROME_README_SRC="$ROOT_DIR/chrome/README.md"
 CONFIG_INIT_SRC="$ROOT_DIR/publish/config.init.mac.yaml"
 ZIP_NAME="AntBrowser-${VERSION}-macos-${ARCH}.zip"
 APP_EXPORT="$OUTPUT_DIR/AntBrowser-${VERSION}-macos-${ARCH}.app"
@@ -186,11 +185,6 @@ if [[ ! -d "$APP_MACOS_DIR" ]]; then
 fi
 
 cp "$CONFIG_INIT_SRC" "$APP_MACOS_DIR/config.yaml"
-
-if [[ -f "$CHROME_README_SRC" ]]; then
-  mkdir -p "$APP_MACOS_DIR/chrome"
-  cp "$CHROME_README_SRC" "$APP_MACOS_DIR/chrome/README.md"
-fi
 
 ditto "$APP_STAGE" "$APP_EXPORT"
 rm -f "$OUTPUT_DIR/$ZIP_NAME"

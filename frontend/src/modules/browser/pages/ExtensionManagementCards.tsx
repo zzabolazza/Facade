@@ -2,7 +2,10 @@ import clsx from 'clsx'
 import { Download, ExternalLink, History, LayoutGrid, List, Power, Puzzle, RefreshCw, RotateCw, Search, Settings, Trash2, Users } from 'lucide-react'
 import { Button, Card, Input } from '../../../shared/components'
 import type { BrowserExtension, BrowserExtensionLookupResult, BrowserProxy } from '../types'
+import { BrowserOpenURL } from '../../../wailsjs/runtime/runtime'
 import { extensionStoreURL, formatExtensionSource, formatExtensionTime, getExtensionManifestMeta, getProxySpeedState } from './extensionManagementUtils'
+
+const CHROME_WEB_STORE_URL = 'https://chromewebstore.google.com/category/extensions'
 
 export type ExtensionViewMode = 'list' | 'grid'
 
@@ -45,7 +48,16 @@ export function ExtensionManagementHeader({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="max-w-2xl text-[12.5px] leading-5 text-[var(--color-text-muted)]">
-        统一管理扩展包，按需挂载到指定实例范围，支持商店链接安装与本地导入。
+        统一管理扩展包，按需挂载到指定实例范围，支持
+        <button
+          type="button"
+          onClick={() => BrowserOpenURL(CHROME_WEB_STORE_URL)}
+          className="mx-0.5 inline-flex items-center gap-0.5 font-medium text-[var(--color-primary)] underline underline-offset-2 hover:opacity-80"
+        >
+          商店
+          <ExternalLink className="h-3 w-3" />
+        </button>
+        链接安装与本地导入。
       </p>
       <div className="flex flex-wrap justify-end gap-2">
         <Button size="sm" variant="secondary" onClick={onOpenProxy}>
@@ -134,7 +146,7 @@ export function ExtensionInstallCard({
           </div>
           <div className="flex shrink-0 gap-2">
             {lookup.storeUrl ? (
-              <Button type="button" size="sm" variant="secondary" onClick={() => window.open(lookup.storeUrl, '_blank')}>
+              <Button type="button" size="sm" variant="secondary" onClick={() => BrowserOpenURL(lookup.storeUrl)}>
                 <ExternalLink className="h-4 w-4" />
                 商店页
               </Button>
@@ -297,7 +309,7 @@ export function InstalledExtensionCard({ item, viewMode, busy, updating, onRestr
           isGrid && "border-t border-[var(--color-border-muted)] pt-3",
         )}>
           {storeUrl ? (
-            <Button type="button" size="sm" variant="secondary" onClick={() => window.open(storeUrl, '_blank')}>
+            <Button type="button" size="sm" variant="secondary" onClick={() => BrowserOpenURL(storeUrl)}>
               <ExternalLink className="h-4 w-4" />
               商店
             </Button>

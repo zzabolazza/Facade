@@ -28,8 +28,6 @@ pnpm-debug.log*
 build/bin/*
 !build/bin/README.md
 build/dist/
-chrome/*
-!chrome/README.md
 *.exe
 *.dll
 *.so
@@ -40,14 +38,14 @@ publish/staging/
 publish/output/
 
 # Internal docs / scratch files
-docs/
+docs/*
+!docs/superpowers/
+!docs/superpowers/**
 DEPLOYMENT_GUIDE.md
 plan.md
 pic/
 
-# Runtime data
-data/*
-!data/README.md
+# Runtime data (lives under home state root, not the repo)
 snapshots/
 app.db
 config.yaml.broken-*
@@ -61,6 +59,10 @@ profiles.yaml
 frontend/node_modules/
 frontend/dist/
 frontend/.vite/
+
+# Swagger UI is loaded from CDN; keep only index.html and openapi.yaml.
+backend/internal/launchcode/swagger/swagger-ui-bundle.js
+backend/internal/launchcode/swagger/swagger-ui.css
 
 # Python cache
 __pycache__/

@@ -123,7 +123,6 @@ TARGET="linux-$ARCH"
 APP_ICON_SRC="$ROOT_DIR/build/appicon.png"
 APP_BIN="$ROOT_DIR/build/bin/ant-chrome"
 WAILS_CONFIG="$ROOT_DIR/wails.json"
-CHROME_README_SRC="$ROOT_DIR/chrome/README.md"
 APP_PACKAGE_NAME="ant-browser"
 APP_BINARY_NAME="ant-chrome"
 APP_ICON_NAME="ant-browser"
@@ -192,16 +191,11 @@ echo "[4/5] Assembling staging files..."
 APP_STAGE="$STAGING_ROOT/$TARGET/app"
 DEB_STAGE="$STAGING_ROOT/$TARGET/deb"
 rm -rf "$APP_STAGE" "$DEB_STAGE"
-mkdir -p "$APP_STAGE/data" "$DEB_STAGE"
+mkdir -p "$APP_STAGE" "$DEB_STAGE"
 
 cp "$APP_BIN" "$APP_STAGE/ant-chrome"
 cp "$ROOT_DIR/publish/config.init.linux.yaml" "$APP_STAGE/config.yaml"
 chmod +x "$APP_STAGE/ant-chrome"
-
-if [[ -f "$CHROME_README_SRC" ]]; then
-  mkdir -p "$APP_STAGE/chrome"
-  cp "$CHROME_README_SRC" "$APP_STAGE/chrome/README.md"
-fi
 
 mkdir -p "$OUTPUT_DIR"
 TAR_NAME="AntBrowser-${VERSION}-linux-${ARCH}.tar.gz"
@@ -213,7 +207,7 @@ DESKTOP_ROOT="$PKG_ROOT/usr/share/applications"
 ICON_THEME_ROOT="$PKG_ROOT/usr/share/icons/hicolor"
 PIXMAPS_ROOT="$PKG_ROOT/usr/share/pixmaps"
 METAINFO_ROOT="$PKG_ROOT/usr/share/metainfo"
-mkdir -p "$INSTALL_ROOT/data" "$PKG_ROOT/DEBIAN" "$DESKTOP_ROOT" "$PIXMAPS_ROOT" "$METAINFO_ROOT"
+mkdir -p "$INSTALL_ROOT" "$PKG_ROOT/DEBIAN" "$DESKTOP_ROOT" "$PIXMAPS_ROOT" "$METAINFO_ROOT"
 
 for size in "${ICON_SIZES[@]}"; do
   mkdir -p "$ICON_THEME_ROOT/${size}x${size}/apps"
@@ -221,10 +215,6 @@ done
 
 cp "$APP_STAGE/ant-chrome" "$INSTALL_ROOT/ant-chrome"
 cp "$APP_STAGE/config.yaml" "$INSTALL_ROOT/config.yaml"
-if [[ -f "$APP_STAGE/chrome/README.md" ]]; then
-  mkdir -p "$INSTALL_ROOT/chrome"
-  cp "$APP_STAGE/chrome/README.md" "$INSTALL_ROOT/chrome/README.md"
-fi
 cp "$APP_ICON_SRC" "$ICON_THEME_ROOT/512x512/apps/${APP_ICON_NAME}.png"
 for size in "${ICON_SIZES[@]}"; do
   if [[ "$size" != "512" ]]; then
@@ -232,7 +222,6 @@ for size in "${ICON_SIZES[@]}"; do
   fi
 done
 ln -sf "../icons/hicolor/512x512/apps/${APP_ICON_NAME}.png" "$PIXMAPS_ROOT/${APP_ICON_NAME}.png"
-touch "$INSTALL_ROOT/data/.keep"
 chmod +x "$INSTALL_ROOT/ant-chrome"
 
 cat > "$DESKTOP_ROOT/$APP_DESKTOP_ID" <<EOF

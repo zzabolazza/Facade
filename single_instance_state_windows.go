@@ -3,17 +3,14 @@
 package main
 
 import (
-	"os"
+	"ant-chrome/backend"
 	"path/filepath"
 	"strings"
 )
 
 func singleInstanceStateRoot(appRoot string) string {
-	if dir := strings.TrimSpace(os.Getenv("LOCALAPPDATA")); dir != "" {
-		return filepath.Join(dir, "Ant Browser")
-	}
-	if dir, err := os.UserConfigDir(); err == nil && strings.TrimSpace(dir) != "" {
-		return filepath.Join(dir, "Ant Browser")
+	if root := strings.TrimSpace(backend.RuntimeStateRoot(appRoot)); root != "" {
+		return root
 	}
 	return filepath.Join(appRoot, "data")
 }
