@@ -268,8 +268,8 @@ export function BrowserProxyListGroups() {
 }
 
 
-export function BrowserProxyResolveLocation(arg1) {
-  return window['go']['main']['App']['BrowserProxyResolveLocation'](arg1);
+export function BrowserProxyResolveLocation(arg1, arg2) {
+  return window['go']['main']['App']['BrowserProxyResolveLocation'](arg1, arg2);
 }
 
 export function BrowserProxyTestSpeed(arg1) {

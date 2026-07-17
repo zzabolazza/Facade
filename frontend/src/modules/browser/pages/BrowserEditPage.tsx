@@ -5,7 +5,7 @@ import { Button, Card, ConfirmModal, FormItem, Input, Modal, Select, Textarea, t
 import type { BrowserCore, BrowserProfileInput, BrowserProxy, BrowserGroup, ProxyLocationResolveResult } from '../types'
 import { browserProxyResolveLocation, createBrowserProfile, fetchAllTags, fetchBrowserCores, fetchBrowserProfiles, fetchBrowserProxies, fetchBrowserSettings, fetchGroups, openUserDataDir, updateBrowserProfile, validateProxyConfig } from '../api'
 import { FingerprintPanel } from '../components/FingerprintPanel'
-import { applyLocaleToFingerprintArgs } from '../utils/fingerprintSerializer'
+import { applyLocaleToFingerprintArgs, getSystemLanguage, getSystemTimezone } from '../utils/fingerprintSerializer'
 import { TagInput } from '../components/TagInput'
 import { GroupSelector } from '../components/GroupSelector'
 import { ProxyPickerModal } from '../components/ProxyPickerModal'
@@ -79,9 +79,15 @@ export function BrowserEditPage() {
   const [saveError, setSaveError] = useState('')
   const [locationResolving, setLocationResolving] = useState(false)
   const [locationResult, setLocationResult] = useState<ProxyLocationResolveResult | null>(null)
+  const [lockedLocale, setLockedLocale] = useState(() => ({
+    lang: getSystemLanguage(),
+    timezone: getSystemTimezone(),
+  }))
+  const [proxiesReady, setProxiesReady] = useState(false)
 
   useEffect(() => {
     const loadData = async () => {
+      setProxiesReady(false)
       const [coreList, proxyList, tagList, groupList, settings] = await Promise.all([
         fetchBrowserCores(),
         fetchBrowserProxies(),
@@ -100,6 +106,7 @@ export function BrowserEditPage() {
         setProxyMode('pool')
         setFormData((prev) => ({ ...prev, proxyId: resolved.proxyId || directProxyID, proxyConfig: '' }))
         setLaunchArgsText(resolvedDefaultLaunchArgs.join('\n'))
+        setProxiesReady(true)
         return
       }
       const list = await fetchBrowserProfiles()
@@ -124,9 +131,68 @@ export function BrowserEditPage() {
         groupId: current.groupId || '',
       })
       setLaunchArgsText(currentLaunchArgs.join('\n'))
+      setProxiesReady(true)
     }
     loadData()
   }, [id, isCreate])
+
+  useEffect(() => {
+    if (!proxiesReady) return
+
+    let cancelled = false
+    const debounceMs = proxyMode === 'local' ? 400 : 0
+    const timer = window.setTimeout(async () => {
+      const proxyId = proxyMode === 'pool' ? (formData.proxyId || directProxyID) : ''
+      const proxyConfig = proxyMode === 'local' ? (formData.proxyConfig || '').trim() : ''
+
+      setLocationResolving(true)
+      try {
+        const result = await browserProxyResolveLocation(proxyId, proxyConfig)
+        if (cancelled) return
+        setLocationResult(result)
+
+        const matched = Boolean(result.ok && result.lang && result.timezone)
+        const lang = matched ? result.lang : getSystemLanguage()
+        const timezone = matched ? result.timezone : getSystemTimezone()
+        setLockedLocale({ lang, timezone })
+        setFormData((prev) => ({
+          ...prev,
+          fingerprintArgs: applyLocaleToFingerprintArgs(prev.fingerprintArgs, lang, timezone),
+        }))
+      } catch (error: unknown) {
+        if (cancelled) return
+        const message = (error as Error)?.message || '代理定位失败'
+        setLocationResult({
+          ok: false,
+          proxyId,
+          auto: false,
+          source: '',
+          error: message,
+          ip: '',
+          country: '',
+          region: '',
+          city: '',
+          lang: '',
+          timezone: '',
+          resolvedAt: '',
+        })
+        const lang = getSystemLanguage()
+        const timezone = getSystemTimezone()
+        setLockedLocale({ lang, timezone })
+        setFormData((prev) => ({
+          ...prev,
+          fingerprintArgs: applyLocaleToFingerprintArgs(prev.fingerprintArgs, lang, timezone),
+        }))
+      } finally {
+        if (!cancelled) setLocationResolving(false)
+      }
+    }, debounceMs)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [proxiesReady, proxyMode, formData.proxyId, formData.proxyConfig])
 
   const handleChange = (field: keyof BrowserProfileInput, value: string | string[]) => {
     setIsDirty(true)
@@ -201,29 +267,15 @@ export function BrowserEditPage() {
     if (isDirty) { setLeaveConfirm(true) } else { navigate('/browser/list') }
   }
 
-  const handleApplyProxyLocation = async () => {
-    if (proxyMode !== 'pool' || !formData.proxyId || formData.proxyId === directProxyID) {
-      toast.error('请选择代理池中的非直连节点')
-      return
+  const locationStatusText = (() => {
+    if (locationResolving) return '正在根据代理出口匹配语言与时区…'
+    if (!locationResult) return ''
+    if (locationResult.ok && locationResult.lang && locationResult.timezone) {
+      const place = [locationResult.country, locationResult.region, locationResult.city].filter(Boolean).join(' / ') || '-'
+      return `出口 ${locationResult.ip || '-'} · ${place} · ${locationResult.lang} · ${locationResult.timezone}`
     }
-    setLocationResolving(true)
-    setLocationResult(null)
-    try {
-      const result = await browserProxyResolveLocation(formData.proxyId)
-      setLocationResult(result)
-      if (!result.ok || !result.lang || !result.timezone) {
-        toast.error(result.error || '无法根据代理 IP 匹配定位')
-        return
-      }
-      const nextArgs = applyLocaleToFingerprintArgs(formData.fingerprintArgs, result.lang, result.timezone)
-      handleChange('fingerprintArgs', nextArgs)
-      toast.success(`已设置 ${result.lang} / ${result.timezone}`)
-    } catch (error: unknown) {
-      toast.error((error as Error)?.message || '代理定位失败')
-    } finally {
-      setLocationResolving(false)
-    }
-  }
+    return `匹配失败，已回退系统语言/时区：${lockedLocale.lang} / ${lockedLocale.timezone}`
+  })()
 
   const defaultCore = cores.find(c => c.isDefault)
   const selectedPoolProxy = proxies.find((proxy) => proxy.proxyId === formData.proxyId)
@@ -341,7 +393,7 @@ export function BrowserEditPage() {
               <div className="flex gap-2">
                 <Select
                   value={formData.proxyId}
-                  onChange={e => { handleChange('proxyId', e.target.value); setLocationResult(null) }}
+                  onChange={e => handleChange('proxyId', e.target.value)}
                   options={
                     proxies.length > 0
                       ? proxies.map(p => ({ value: p.proxyId, label: p.proxyName || p.proxyId }))
@@ -352,23 +404,7 @@ export function BrowserEditPage() {
                 <Button variant="secondary" size="sm" onClick={() => setProxyPickerOpen(true)} title="按分组选择代理">
                   <Layers className="w-4 h-4" />
                 </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleApplyProxyLocation}
-                  loading={locationResolving}
-                  disabled={!formData.proxyId || formData.proxyId === directProxyID}
-                >
-                  按代理匹配定位
-                </Button>
               </div>
-              {locationResult && (
-                <div className="mt-2 text-xs text-[var(--color-text-muted)]">
-                  {locationResult.ok
-                    ? `出口 ${locationResult.ip || '-'} · ${[locationResult.country, locationResult.region, locationResult.city].filter(Boolean).join(' / ') || '-'} · ${locationResult.lang} · ${locationResult.timezone}`
-                    : locationResult.error || '未匹配到定位'}
-                </div>
-              )}
             </FormItem>
           ) : (
             <FormItem label="本地代理地址" hint="支持 http://、https://、socks5://">
@@ -378,6 +414,9 @@ export function BrowserEditPage() {
                 placeholder="http://127.0.0.1:7890"
               />
             </FormItem>
+          )}
+          {locationStatusText && (
+            <p className="text-xs text-[var(--color-text-muted)]">{locationStatusText}</p>
           )}
         </div>
         <p className="text-xs text-[var(--color-text-muted)] mt-2">
@@ -390,7 +429,7 @@ export function BrowserEditPage() {
       <ProxyPickerModal
         open={proxyPickerOpen}
         currentProxyId={formData.proxyId}
-        onSelect={proxy => { handleChange('proxyId', proxy.proxyId); setLocationResult(null) }}
+        onSelect={proxy => handleChange('proxyId', proxy.proxyId)}
         onProxyListUpdated={handleProxyListUpdated}
         onProxyDeleted={handleProxyDeleted}
         onClose={() => setProxyPickerOpen(false)}
@@ -399,7 +438,12 @@ export function BrowserEditPage() {
       <Card title="指纹配置" subtitle="配置浏览器指纹参数">
         <FingerprintPanel
           value={formData.fingerprintArgs}
-          onChange={args => handleChange('fingerprintArgs', args)}
+          onChange={args => {
+            handleChange(
+              'fingerprintArgs',
+              applyLocaleToFingerprintArgs(args, lockedLocale.lang, lockedLocale.timezone),
+            )
+          }}
         />
       </Card>
 

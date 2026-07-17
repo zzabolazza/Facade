@@ -108,10 +108,10 @@ export async function browserProxyCheckIPHealth(proxyId: string): Promise<ProxyI
   }
 }
 
-export async function browserProxyResolveLocation(proxyId: string): Promise<ProxyLocationResolveResult> {
+export async function browserProxyResolveLocation(proxyId: string, proxyConfig: string = ''): Promise<ProxyLocationResolveResult> {
   const bindings: any = await getBindings()
   if (bindings?.BrowserProxyResolveLocation) {
-    return (await bindings.BrowserProxyResolveLocation(proxyId)) || {
+    return (await bindings.BrowserProxyResolveLocation(proxyId, proxyConfig)) || {
       proxyId,
       ok: false,
       auto: false,
@@ -129,7 +129,7 @@ export async function browserProxyResolveLocation(proxyId: string): Promise<Prox
 
   await sleep(400)
   return {
-    proxyId,
+    proxyId: proxyId || '__direct__',
     ok: true,
     auto: true,
     source: 'mock',

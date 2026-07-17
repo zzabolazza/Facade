@@ -26,6 +26,15 @@ func FetchIPHealthInfo(
 	proxies []config.BrowserProxy,
 	cfg *IPHealthConfig,
 ) (map[string]interface{}, error) {
+	return FetchIPHealthInfoWithConfig(proxyId, "", proxies, cfg)
+}
+
+func FetchIPHealthInfoWithConfig(
+	proxyId string,
+	proxyConfig string,
+	proxies []config.BrowserProxy,
+	cfg *IPHealthConfig,
+) (map[string]interface{}, error) {
 	if cfg == nil {
 		cfg = &IPHealthConfig{}
 	}
@@ -49,7 +58,12 @@ func FetchIPHealthInfo(
 		return meta, fmt.Errorf("IP 健康检测目标 URL 为空")
 	}
 
-	src := resolveProxyConfig("", proxies, proxyId)
+	src := resolveProxyConfig(proxyConfig, proxies, proxyId)
+	if src == "" {
+		if strings.TrimSpace(proxyId) == "" || strings.EqualFold(strings.TrimSpace(proxyId), "__direct__") {
+			src = "direct://"
+		}
+	}
 	if src == "" {
 		meta["error"] = "未找到代理配置"
 		return meta, fmt.Errorf("未找到代理配置")

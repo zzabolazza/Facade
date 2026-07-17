@@ -6,7 +6,6 @@ import {
   FINGERPRINT_PRESETS,
   PRESET_RESOLUTIONS,
   deserialize,
-  getSystemTimezone,
   randomFingerprintSeed,
   serialize,
 } from '../utils/fingerprintSerializer'
@@ -29,59 +28,6 @@ const PLATFORM_OPTIONS = [
   { value: 'windows', label: 'Windows' },
   { value: 'mac', label: 'macOS' },
   { value: 'linux', label: 'Linux' },
-]
-
-const LANG_OPTIONS = [
-  { value: '', label: '不设置' },
-  { value: 'zh-CN', label: '中文 (zh-CN)' },
-  { value: 'zh-HK', label: '繁體中文香港 (zh-HK)' },
-  { value: 'zh-TW', label: '繁體中文台灣 (zh-TW)' },
-  { value: 'en-US', label: 'English US (en-US)' },
-  { value: 'en-GB', label: 'English UK (en-GB)' },
-  { value: 'en-CA', label: 'English Canada (en-CA)' },
-  { value: 'en-AU', label: 'English Australia (en-AU)' },
-  { value: 'en-SG', label: 'English Singapore (en-SG)' },
-  { value: 'en-IN', label: 'English India (en-IN)' },
-  { value: 'ja-JP', label: '日本語 (ja-JP)' },
-  { value: 'ko-KR', label: '한국어 (ko-KR)' },
-  { value: 'fr-FR', label: 'Français (fr-FR)' },
-  { value: 'de-DE', label: 'Deutsch (de-DE)' },
-  { value: 'nl-NL', label: 'Nederlands (nl-NL)' },
-  { value: 'ru-RU', label: 'Русский (ru-RU)' },
-  { value: 'pt-BR', label: 'Português Brasil (pt-BR)' },
-]
-
-const TIMEZONE_OPTIONS = [
-  { value: '', label: '不设置' },
-  { value: 'system', label: '跟随系统时区' },
-  // 亚洲
-  { value: 'Asia/Shanghai', label: 'Asia/Shanghai (UTC+8)' },
-  { value: 'Asia/Tokyo', label: 'Asia/Tokyo (UTC+9)' },
-  { value: 'Asia/Seoul', label: 'Asia/Seoul (UTC+9)' },
-  { value: 'Asia/Singapore', label: 'Asia/Singapore (UTC+8)' },
-  { value: 'Asia/Hong_Kong', label: 'Asia/Hong_Kong (UTC+8)' },
-  { value: 'Asia/Taipei', label: 'Asia/Taipei (UTC+8)' },
-  { value: 'Asia/Dubai', label: 'Asia/Dubai (UTC+4)' },
-  { value: 'Asia/Kolkata', label: 'Asia/Kolkata (UTC+5:30)' },
-  // 美洲
-  { value: 'America/New_York', label: 'America/New_York (UTC-5)' },
-  { value: 'America/Los_Angeles', label: 'America/Los_Angeles (UTC-8)' },
-  { value: 'America/Chicago', label: 'America/Chicago (UTC-6)' },
-  { value: 'America/Denver', label: 'America/Denver (UTC-7)' },
-  { value: 'America/Toronto', label: 'America/Toronto (UTC-5)' },
-  { value: 'America/Vancouver', label: 'America/Vancouver (UTC-8)' },
-  { value: 'America/Phoenix', label: 'America/Phoenix (UTC-7)' },
-  { value: 'America/Sao_Paulo', label: 'America/Sao_Paulo (UTC-3)' },
-  // EMEA
-  { value: 'Europe/London', label: 'Europe/London (UTC+0)' },
-  { value: 'Europe/Paris', label: 'Europe/Paris (UTC+1)' },
-  { value: 'Europe/Berlin', label: 'Europe/Berlin (UTC+1)' },
-  { value: 'Europe/Moscow', label: 'Europe/Moscow (UTC+3)' },
-  // 大洋洲
-  { value: 'Australia/Sydney', label: 'Australia/Sydney (UTC+10)' },
-  { value: 'Australia/Melbourne', label: 'Australia/Melbourne (UTC+10)' },
-  { value: 'Australia/Perth', label: 'Australia/Perth (UTC+8)' },
-  { value: 'Pacific/Auckland', label: 'Pacific/Auckland (UTC+12)' },
 ]
 
 const RESOLUTION_OPTIONS = [
@@ -195,7 +141,12 @@ export function FingerprintPanel({ value, onChange }: FingerprintPanelProps) {
   }, [value.join('\n')])
 
   const update = (patch: Partial<FingerprintConfig>) => {
-    const next = { ...config, ...patch }
+    const next = {
+      ...config,
+      ...patch,
+      lang: config.lang,
+      timezone: config.timezone,
+    }
     setConfig(next)
     onChange(serialize(next))
   }
@@ -204,11 +155,13 @@ export function FingerprintPanel({ value, onChange }: FingerprintPanelProps) {
     if (!presetId) return
     const preset = FINGERPRINT_PRESETS.find(p => p.id === presetId)
     if (!preset) return
-    // 应用预设时自动生成新种子，保留未知参数
+    // 应用预设时自动生成新种子，保留未知参数；语言/时区由代理自动匹配锁定
     const next: FingerprintConfig = {
       ...preset.config,
       seed: randomFingerprintSeed(),
       unknownArgs: config.unknownArgs,
+      lang: config.lang,
+      timezone: config.timezone,
     }
     setConfig(next)
     onChange(serialize(next))
@@ -217,6 +170,8 @@ export function FingerprintPanel({ value, onChange }: FingerprintPanelProps) {
   const handleAdvancedChange = (text: string) => {
     const args = text.split('\n').map(s => s.trim()).filter(Boolean)
     const parsed = deserialize(args)
+    parsed.lang = config.lang
+    parsed.timezone = config.timezone
     setConfig(parsed)
     onChange(serialize(parsed))
   }
@@ -297,15 +252,11 @@ export function FingerprintPanel({ value, onChange }: FingerprintPanelProps) {
           <FormItem label="操作系统">
             <Select value={config.platform ?? ''} onChange={e => update({ platform: e.target.value || undefined })} options={PLATFORM_OPTIONS} />
           </FormItem>
-          <FormItem label="语言">
-            <Select value={config.lang ?? ''} onChange={e => update({ lang: e.target.value || undefined })} options={LANG_OPTIONS} />
+          <FormItem label="语言" hint="由代理出口自动匹配">
+            <Input value={config.lang || '未匹配'} disabled className="opacity-80" />
           </FormItem>
-          <FormItem label="时区">
-            <Select value={config.timezone ?? ''} onChange={e => update({ timezone: e.target.value || undefined })} options={TIMEZONE_OPTIONS.map(opt =>
-              opt.value === 'system'
-                ? { ...opt, label: `跟随系统时区 (当前: ${getSystemTimezone()})` }
-                : opt
-            )} />
+          <FormItem label="时区" hint="由代理出口自动匹配">
+            <Input value={config.timezone || '未匹配'} disabled className="opacity-80" />
           </FormItem>
         </div>
       </div>

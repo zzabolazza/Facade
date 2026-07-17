@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { ChevronDown, ChevronRight, Filter, X } from 'lucide-react'
 import { Input, Select } from '../../../shared/components'
-import { TagFilterBar } from './TagFilterBar'
 import type { BrowserCore, BrowserProxy, BrowserGroupWithCount } from '../types'
 
 export interface InstanceFilters {
@@ -45,7 +44,8 @@ export function InstanceFilterBar({ filters, onChange, proxies, cores, allTags, 
 
   const hasFilter = !isFiltersEmpty(filters)
   const searchValue = filters.keyword || filters.kwSearch
-  const activeCount = [searchValue, filters.status, filters.proxyId, filters.coreId, filters.groupId].filter(Boolean).length + filters.tags.size
+  const selectedTag = filters.tags.size === 1 ? Array.from(filters.tags)[0] : ''
+  const activeCount = [searchValue, filters.status, filters.proxyId, filters.coreId, filters.groupId, selectedTag].filter(Boolean).length
 
   return (
     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
@@ -76,6 +76,12 @@ export function InstanceFilterBar({ filters, onChange, proxies, cores, allTags, 
           <Select value={filters.proxyId} onChange={e => set('proxyId', e.target.value)} options={[{ value: '', label: '全部代理' }, { value: '__none__', label: '无代理' }, ...proxies.map(p => ({ value: p.proxyId, label: p.proxyName || p.proxyId }))]} className="h-8 w-[148px] text-xs" />
           <Select value={filters.coreId} onChange={e => set('coreId', e.target.value)} options={[{ value: '', label: '全部内核' }, ...cores.map(c => ({ value: c.coreId, label: c.coreName }))]} className="h-8 w-[138px] text-xs" />
           <Select value={filters.groupId} onChange={e => set('groupId', e.target.value)} options={[{ value: '', label: '全部分组' }, { value: '__ungrouped__', label: '未分组' }, ...groups.map(g => ({ value: g.groupId, label: g.groupName }))]} className="h-8 w-[138px] text-xs" />
+          <Select
+            value={selectedTag}
+            onChange={e => set('tags', e.target.value ? new Set([e.target.value]) : new Set())}
+            options={[{ value: '', label: '全部标签' }, ...allTags.map(tag => ({ value: tag, label: tag }))]}
+            className="h-8 w-[138px] text-xs"
+          />
           {hasFilter && (
             <button
               onClick={() => onChange({ ...EMPTY_FILTERS, tags: new Set() })}
@@ -85,9 +91,6 @@ export function InstanceFilterBar({ filters, onChange, proxies, cores, allTags, 
               清除
             </button>
           )}
-          <div className="basis-full">
-            <TagFilterBar tags={allTags} selected={filters.tags} onChange={tags => set('tags', tags)} />
-          </div>
         </>
       )}
     </div>

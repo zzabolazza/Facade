@@ -12,6 +12,15 @@ export function getSystemTimezone(): string {
   }
 }
 
+export function getSystemLanguage(): string {
+  try {
+    const lang = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language.trim() : ''
+    return lang || 'zh-CN'
+  } catch {
+    return 'zh-CN'
+  }
+}
+
 export interface FingerprintConfig {
   // 指纹种子（核心）
   seed?: string            // --fingerprint=<seed>  控制所有随机噪声的根种子

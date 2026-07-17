@@ -147,7 +147,7 @@ export function BrowserProxyList():Promise<Array<config.BrowserProxy>>;
 export function BrowserProxyListGroups():Promise<Array<string>>;
 
 
-export function BrowserProxyResolveLocation(arg1:string):Promise<backend.ProxyLocationResolveResult>;
+export function BrowserProxyResolveLocation(arg1:string,arg2:string):Promise<backend.ProxyLocationResolveResult>;
 
 export function BrowserProxyTestSpeed(arg1:string):Promise<backend.ProxyTestResult>;
 

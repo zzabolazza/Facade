@@ -1,10 +1,13 @@
 package backend
 
 import (
+	"ant-chrome/backend/internal/proxy"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type ProxyLocationResolveResult struct {
@@ -63,22 +66,56 @@ var cityTimezoneDefaults = map[string]string{
 	"AU|perth":         "Australia/Perth",
 }
 
-func (a *App) BrowserProxyResolveLocation(proxyId string) ProxyLocationResolveResult {
+func (a *App) BrowserProxyResolveLocation(proxyId string, proxyConfig string) ProxyLocationResolveResult {
 	proxyId = strings.TrimSpace(proxyId)
+	proxyConfig = strings.TrimSpace(proxyConfig)
 	resolvedAt := time.Now().Format(time.RFC3339)
-	if proxyId == "" || strings.EqualFold(proxyId, "__direct__") {
-		return ProxyLocationResolveResult{ProxyId: proxyId, Ok: false, Auto: false, Source: "manual", Error: "直连或未选择代理，请手动选择定位", ResolvedAt: resolvedAt}
+
+	usePoolCache := proxyConfig == "" && proxyId != "" && !strings.EqualFold(proxyId, "__direct__")
+	if usePoolCache {
+		if cached, ok := a.cachedProxyIPHealthResult(proxyId); ok && cached.Ok {
+			return buildProxyLocationResolveResult(proxyId, cached, "cache", resolvedAt)
+		}
 	}
 
-	if cached, ok := a.cachedProxyIPHealthResult(proxyId); ok && cached.Ok {
-		return buildProxyLocationResolveResult(proxyId, cached, "cache", resolvedAt)
-	}
-
-	health := a.BrowserProxyCheckIPHealth(proxyId)
+	health := a.checkIPHealthForLocation(proxyId, proxyConfig)
 	if !health.Ok {
-		return ProxyLocationResolveResult{ProxyId: proxyId, Ok: false, Auto: false, Source: health.Source, Error: health.Error, Health: &health, ResolvedAt: resolvedAt}
+		return ProxyLocationResolveResult{
+			ProxyId:    health.ProxyId,
+			Ok:         false,
+			Auto:       false,
+			Source:     health.Source,
+			Error:      health.Error,
+			Health:     &health,
+			ResolvedAt: resolvedAt,
+		}
 	}
-	return buildProxyLocationResolveResult(proxyId, health, "ip_health", resolvedAt)
+	return buildProxyLocationResolveResult(health.ProxyId, health, "ip_health", resolvedAt)
+}
+
+func (a *App) checkIPHealthForLocation(proxyId string, proxyConfig string) ProxyIPHealthResult {
+	proxies := a.getLatestProxies()
+	id := strings.TrimSpace(proxyId)
+	cfg := strings.TrimSpace(proxyConfig)
+	if id == "" && cfg == "" {
+		id = "__direct__"
+		cfg = "direct://"
+	} else if strings.EqualFold(id, "__direct__") && cfg == "" {
+		cfg = "direct://"
+	} else if id == "" && cfg != "" {
+		id = "__local__"
+	}
+
+	data, err := proxy.FetchIPHealthInfoWithConfig(id, cfg, proxies, a.proxyIPHealthConfig())
+	result := buildProxyIPHealthResult(id, data, err)
+	// Only persist pool proxy health results (not ephemeral local configs).
+	if proxyConfig == "" && proxyId != "" && !strings.EqualFold(proxyId, "__direct__") {
+		a.persistProxyIPHealthResult(result)
+	}
+	if a.ctx != nil {
+		runtime.EventsEmit(a.ctx, "proxy:iphealth:result", result)
+	}
+	return result
 }
 
 func (a *App) cachedProxyIPHealthResult(proxyId string) (ProxyIPHealthResult, bool) {
