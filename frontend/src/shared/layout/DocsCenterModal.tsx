@@ -21,10 +21,10 @@ export function DocsCenterModal({ open, onClose }: DocsCenterModalProps) {
       open={open}
       onClose={onClose}
       title="API 文档"
-      width="1200px"
+      width="920px"
       padding={false}
     >
-      <div className="h-[72vh] min-h-[480px]">
+      <div className="h-[68vh] min-h-[420px]">
         {launchContextLoading ? (
           <div className="flex h-full items-center justify-center text-sm text-[var(--color-text-muted)]">
             加载文档中...

@@ -138,11 +138,11 @@ input, select, textarea {
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.95);
+    transform: translateY(6px) scale(0.985);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -158,7 +158,7 @@ input, select, textarea {
 }
 
 .animate-scale-in {
-  animation: scaleIn 0.2s ease-out;
+  animation: scaleIn 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .animate-slide-in-right {
@@ -203,4 +203,16 @@ input, select, textarea {
 
 .animate-slide-in-bottom {
   animation: slideInBottom 0.3s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-scale-in,
+  .animate-slide-in-right,
+  .animate-slide-in-left,
+  .animate-slide-in-top,
+  .animate-slide-in-bottom {
+    animation-duration: 0.01ms !important;
+  }
 }

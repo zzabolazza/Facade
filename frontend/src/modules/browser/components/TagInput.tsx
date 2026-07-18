@@ -84,7 +84,7 @@ export function TagInput({ value, onChange, suggestions = [], placeholder = '输
       </div>
 
       {showSuggestions && filtered.length > 0 && (
-        <div className="absolute z-20 top-full mt-1 w-full bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-md shadow-lg overflow-hidden">
+        <div className="absolute top-full z-20 mt-1 w-full overflow-hidden rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-lg)] animate-scale-in">
           {filtered.slice(0, 8).map(s => (
             <button
               key={s}

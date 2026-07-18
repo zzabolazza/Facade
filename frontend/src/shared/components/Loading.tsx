@@ -37,8 +37,10 @@ export function Loading({
 
   if (fullscreen) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-bg-base)]/80 backdrop-blur-sm">
-        {spinner}
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)] p-4 animate-fade-in">
+        <div className="rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] px-7 py-5 shadow-[var(--shadow-overlay)] animate-scale-in">
+          {spinner}
+        </div>
       </div>
     )
   }

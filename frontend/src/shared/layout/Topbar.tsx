@@ -29,7 +29,7 @@ function NotificationDropdown({
   }
 
   return (
-    <div className="absolute right-0 top-full mt-2 w-80 bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl shadow-xl overflow-hidden z-50 animate-fade-in">
+    <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-[10px] border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] shadow-[var(--shadow-lg)] animate-scale-in">
       <div className="px-4 py-3 border-b border-[var(--color-border-muted)] flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold text-[var(--color-text-primary)]">异常与通知</span>

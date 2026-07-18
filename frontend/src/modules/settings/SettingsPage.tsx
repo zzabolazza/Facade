@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Save, RotateCcw } from 'lucide-react'
-import { Button, toast } from '../../shared/components'
+import { Button, ConfirmModal, toast } from '../../shared/components'
 import {
   fetchSettings,
   saveSettings,
@@ -22,6 +22,8 @@ export function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
   const [importModalOpen, setImportModalOpen] = useState(false)
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false)
+  const [initializeConfirmOpen, setInitializeConfirmOpen] = useState(false)
   const [actionLoading, setActionLoading] = useState<'none' | 'init' | 'export' | 'import-reset' | 'import-merge'>('none')
   const [exportProgress, setExportProgress] = useState<BackupExportProgress | null>(null)
   const [importProgress, setImportProgress] = useState<BackupExportProgress | null>(null)
@@ -73,17 +75,13 @@ export function SettingsPage() {
   }
 
   const handleReset = async () => {
-    if (confirm('确定要重置所有设置吗？')) {
-      const data = await resetSettings()
-      setSettings(data)
-      setHasChanges(false)
-    }
+    const data = await resetSettings()
+    setSettings(data)
+    setHasChanges(false)
+    toast.success('设置已重置')
   }
 
   const handleInitializeSystem = async () => {
-    if (!confirm('恢复出厂设置会清空所有实例、代理、分组及浏览器数据，且无法撤销。建议先导出配置，是否继续？')) {
-      return
-    }
     setActionLoading('init')
     try {
       const res = await initializeSystemData()
@@ -199,7 +197,7 @@ export function SettingsPage() {
           应用级偏好、功能开关与数据备份。
         </p>
         <div className="flex flex-wrap justify-end gap-2">
-          <Button variant="secondary" size="sm" onClick={handleReset}>
+          <Button variant="secondary" size="sm" onClick={() => setResetConfirmOpen(true)}>
             <RotateCcw className="w-4 h-4" />
             重置
           </Button>
@@ -219,7 +217,7 @@ export function SettingsPage() {
         exportProgress={exportProgress}
         exportLogs={exportLogs}
         exportLogsRef={exportLogsRef}
-        onInitialize={() => { void handleInitializeSystem() }}
+        onInitialize={() => setInitializeConfirmOpen(true)}
         onExport={() => { void handleExportSystem() }}
         onOpenImport={() => {
           setImportProgress(null)
@@ -236,6 +234,25 @@ export function SettingsPage() {
           setImportProgress(null)
         }}
         onImport={(resetFirst) => { void handleImportSystem(resetFirst) }}
+      />
+
+      <ConfirmModal
+        open={resetConfirmOpen}
+        onClose={() => setResetConfirmOpen(false)}
+        onConfirm={() => { void handleReset() }}
+        title="重置设置"
+        content="确定要将所有应用设置恢复为默认值吗？"
+        confirmText="重置设置"
+      />
+
+      <ConfirmModal
+        open={initializeConfirmOpen}
+        onClose={() => setInitializeConfirmOpen(false)}
+        onConfirm={() => { void handleInitializeSystem() }}
+        title="恢复出厂设置"
+        content="此操作会清空所有实例、代理、分组及浏览器数据，且无法撤销。建议先导出配置。"
+        confirmText="确认恢复"
+        danger
       />
 
     </div>

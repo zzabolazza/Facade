@@ -27,13 +27,11 @@ export function ProxyImportModal({
   onImported,
 }: ProxyImportModalProps) {
   const [importGroupName, setImportGroupName] = useState('')
-  const [directImportText, setDirectImportText] = useState('')
   const [directImportForm, setDirectImportForm] = useState<DirectImportForm>(() => ({ ...INITIAL_DIRECT_IMPORT_FORM }))
   const [saving, setSaving] = useState(false)
 
   const canParseImport =
     directImportForm.protocol === 'direct' ||
-    !!directImportText.trim() ||
     (!!directImportForm.server.trim() && !!directImportForm.port.trim())
 
   const handleParse = async () => {
@@ -53,7 +51,6 @@ export function ProxyImportModal({
       await saveBrowserProxies(next)
       onImported(next)
       setImportGroupName('')
-      setDirectImportText('')
       setDirectImportForm({ ...INITIAL_DIRECT_IMPORT_FORM })
       onClose()
       toast.success('代理已创建')
@@ -69,14 +66,11 @@ export function ProxyImportModal({
       open={open}
       groups={groups}
       importGroupName={importGroupName}
-      directImportText={directImportText}
       directImportForm={directImportForm}
       canParseImport={canParseImport && !saving}
       onClose={onClose}
       onParse={() => void handleParse()}
       onImportGroupNameChange={setImportGroupName}
-      onDirectImportTextChange={setDirectImportText}
-      onApplyDirectText={() => toast.info('请在代理池页面使用文本批量导入')}
       onDirectImportFormChange={(patch) => setDirectImportForm((prev) => ({ ...prev, ...patch }))}
     />
   )

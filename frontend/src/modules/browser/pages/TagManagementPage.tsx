@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus, Tag, Trash2, X } from 'lucide-react'
-import { Badge, Button, Card, toast } from '../../../shared/components'
+import { Badge, Button, Card, Loading, toast } from '../../../shared/components'
 import type { BrowserProfile } from '../types'
 import { batchRemoveProfileTags, batchSetProfileTags, fetchBrowserProfiles, renameBrowserTag } from '../api'
 
@@ -412,11 +412,7 @@ export function TagManagementPage() {
         </Card>
 
         {saving && (
-          <div className="fixed inset-0 bg-black/20 z-50 flex items-center justify-center">
-            <div className="bg-[var(--color-bg-elevated)] rounded-lg px-6 py-4 text-sm text-[var(--color-text-primary)] shadow-xl">
-              保存中...
-            </div>
-          </div>
+          <Loading fullscreen text="保存中..." />
         )}
       </div>
       </div>

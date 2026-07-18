@@ -71,10 +71,10 @@ const icons = {
 }
 
 const styles = {
-  success: 'bg-[var(--color-bg-surface)] text-[var(--color-success)] border-[var(--color-success)]/30 shadow-lg shadow-[var(--color-success)]/5',
-  error: 'bg-[var(--color-bg-surface)] text-[var(--color-error)] border-[var(--color-error)]/30 shadow-lg shadow-[var(--color-error)]/5',
-  warning: 'bg-[var(--color-bg-surface)] text-[var(--color-warning)] border-[var(--color-warning)]/30 shadow-lg shadow-[var(--color-warning)]/5',
-  info: 'bg-[var(--color-bg-surface)] text-[var(--color-accent)] border-[var(--color-accent)]/30 shadow-lg shadow-[var(--color-accent)]/5',
+  success: 'text-[var(--color-success)] border-[rgb(22_199_132_/_0.22)]',
+  error: 'text-[var(--color-error)] border-[rgb(239_71_87_/_0.22)]',
+  warning: 'text-[var(--color-warning)] border-[rgb(245_165_36_/_0.22)]',
+  info: 'text-[var(--color-accent)] border-[rgb(75_110_255_/_0.22)]',
 }
 
 function ToastItem({ toast: t }: { toast: Toast }) {
@@ -83,11 +83,14 @@ function ToastItem({ toast: t }: { toast: Toast }) {
 
   return (
     <div
-      className={`flex items-start gap-3 px-4 py-3 rounded-lg border shadow-lg animate-slide-in-right ${styles[t.type]}`}
+      role="status"
+      className={`flex min-w-72 items-start gap-3 rounded-[10px] border bg-[var(--color-bg-surface)] px-4 py-3 shadow-[var(--shadow-lg)] animate-slide-in-right ${styles[t.type]}`}
     >
       <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
       <p className="flex-1 text-sm font-medium">{t.message}</p>
       <button
+        type="button"
+        aria-label="关闭通知"
         onClick={() => removeToast(t.id)}
         className="p-0.5 rounded hover:bg-black/10 transition-colors"
       >

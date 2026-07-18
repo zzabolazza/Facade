@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { Plus, Search, Wifi, X } from 'lucide-react'
-import { ConfirmModal, toast } from '../../../shared/components'
+import { Plus, Search, Wifi } from 'lucide-react'
+import { ConfirmModal, Modal, toast } from '../../../shared/components'
 import type { BrowserProxy } from '../types'
 import { browserProxyBatchTestSpeed, browserProxyTestSpeed, fetchBrowserProxies, fetchBrowserProxyGroups, saveBrowserProxies } from '../api'
 import { EventsOn } from '../../../wailsjs/runtime/runtime'
@@ -321,21 +320,20 @@ export function ProxyPickerModal({ open, currentProxyId, title = '从代理池�
 
   if (!open) return null
 
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-      <div
-        className="relative bg-[var(--color-bg-elevated)] border border-[var(--color-border)] rounded-xl shadow-2xl w-[720px] max-h-[580px] flex flex-col"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
-          <span className="font-semibold text-[var(--color-text-primary)]">{title}</span>
-          <button onClick={onClose} className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors">
-            <X className="w-4 h-4" />
-          </button>
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title}
+      width="720px"
+      padding={false}
+      footer={(
+        <div className="w-full text-left text-xs text-[var(--color-text-muted)]">
+          共 {displayProxies.length} 条，点击行即选中
         </div>
-
-        <div className="flex flex-1 min-h-0">
+      )}
+    >
+        <div className="flex h-[480px] max-h-[calc(100vh-10rem)] min-h-0">
           <div className="w-44 border-r border-[var(--color-border)] flex flex-col py-2 overflow-y-auto shrink-0 bg-[var(--color-bg-muted)]">
             <GroupItem label="全部" active={selectedGroup === ALL_GROUP} count={allProxies.length} onClick={() => setSelectedGroup(ALL_GROUP)} />
             {groups.map(groupName => (
@@ -404,11 +402,6 @@ export function ProxyPickerModal({ open, currentProxyId, title = '从代理池�
           </div>
         </div>
 
-        <div className="px-5 py-3 border-t border-[var(--color-border)] text-xs text-[var(--color-text-muted)]">
-          共 {displayProxies.length} 条，点击行即选中
-        </div>
-      </div>
-
       <ProxyImportModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
@@ -436,7 +429,6 @@ export function ProxyPickerModal({ open, currentProxyId, title = '从代理池�
         cancelText="取消"
         danger
       />
-    </div>,
-    document.body
+    </Modal>
   )
 }

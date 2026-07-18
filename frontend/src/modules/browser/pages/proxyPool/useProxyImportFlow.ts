@@ -4,10 +4,8 @@ import type { BrowserProxy } from '../../types'
 import {
   INITIAL_DIRECT_IMPORT_FORM,
   buildDirectImportCandidate,
-  buildDirectImportCandidatesFromText,
   ensureBuiltinProxies,
   nextProxyID,
-  parseDirectImportText,
   toDisplayList,
   type DirectImportForm,
   type ImportCandidate,
@@ -22,7 +20,6 @@ interface UseProxyImportFlowOptions {
 export function useProxyImportFlow({ proxies, saveProxies }: UseProxyImportFlowOptions) {
   const [importModalOpen, setImportModalOpen] = useState(false)
   const [importGroupName, setImportGroupName] = useState('')
-  const [directImportText, setDirectImportText] = useState('')
   const [directImportForm, setDirectImportForm] = useState<DirectImportForm>(() => ({ ...INITIAL_DIRECT_IMPORT_FORM }))
   const [previewModalOpen, setPreviewModalOpen] = useState(false)
   const [previewList, setPreviewList] = useState<ProxyDisplayInfo[]>([])
@@ -32,27 +29,14 @@ export function useProxyImportFlow({ proxies, saveProxies }: UseProxyImportFlowO
 
   const canParseImport =
     directImportForm.protocol === 'direct' ||
-    !!directImportText.trim() ||
     (!!directImportForm.server.trim() && !!directImportForm.port.trim())
 
   const resetImportState = () => {
     setImportGroupName('')
-    setDirectImportText('')
     setDirectImportForm({ ...INITIAL_DIRECT_IMPORT_FORM })
     setPreviewList([])
     setPreviewCandidates([])
     setRemovedPreviewProxyNames([])
-  }
-
-  const handleApplyDirectText = () => {
-    try {
-      const parsed = parseDirectImportText(directImportText)
-      setDirectImportForm(parsed.form)
-      if (parsed.groupName) setImportGroupName(parsed.groupName)
-      toast.success('已应用到表单')
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : '解析失败')
-    }
   }
 
   const handleRemovePreviewProxy = (proxyId: string) => {
@@ -66,16 +50,7 @@ export function useProxyImportFlow({ proxies, saveProxies }: UseProxyImportFlowO
 
   const handleParseImport = () => {
     try {
-      let candidates: ImportCandidate[] = []
-      if (directImportText.trim()) {
-        const parsed = buildDirectImportCandidatesFromText(directImportText)
-        candidates = parsed.candidates
-        if (!importGroupName.trim() && parsed.defaultGroupName) {
-          setImportGroupName(parsed.defaultGroupName)
-        }
-      } else {
-        candidates = [buildDirectImportCandidate(directImportForm)]
-      }
+      const candidates: ImportCandidate[] = [buildDirectImportCandidate(directImportForm)]
 
       const groupName = importGroupName.trim()
       const withGroup = candidates.map((item) => ({
@@ -131,8 +106,6 @@ export function useProxyImportFlow({ proxies, saveProxies }: UseProxyImportFlowO
     setImportModalOpen,
     importGroupName,
     setImportGroupName,
-    directImportText,
-    setDirectImportText,
     directImportForm,
     setDirectImportForm,
     previewModalOpen,
@@ -142,7 +115,6 @@ export function useProxyImportFlow({ proxies, saveProxies }: UseProxyImportFlowO
     importing,
     canParseImport,
     handleRemovePreviewProxy,
-    handleApplyDirectText,
     handleParseImport,
     handleConfirmImport,
     resetImportState,

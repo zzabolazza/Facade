@@ -78,8 +78,6 @@ export function ProxyPoolPage() {
     setImportModalOpen,
     importGroupName,
     setImportGroupName,
-    directImportText,
-    setDirectImportText,
     directImportForm,
     setDirectImportForm,
     previewModalOpen,
@@ -89,7 +87,6 @@ export function ProxyPoolPage() {
     importing,
     canParseImport,
     handleRemovePreviewProxy,
-    handleApplyDirectText,
     handleParseImport,
     handleConfirmImport,
   } = useProxyImportFlow({
@@ -325,14 +322,11 @@ export function ProxyPoolPage() {
         open={importModalOpen}
         groups={groups}
         importGroupName={importGroupName}
-        directImportText={directImportText}
         directImportForm={directImportForm}
         canParseImport={canParseImport}
         onClose={() => setImportModalOpen(false)}
         onParse={handleParseImport}
         onImportGroupNameChange={setImportGroupName}
-        onDirectImportTextChange={setDirectImportText}
-        onApplyDirectText={handleApplyDirectText}
         onDirectImportFormChange={(patch) => setDirectImportForm((prev) => ({ ...prev, ...patch }))}
       />
 

@@ -184,7 +184,7 @@ export function CoreManagementPage() {
     {
       key: 'actions',
       title: '操作',
-      width: '240px',
+      width: '280px',
       align: 'right',
       render: (_, record) => (
         <div className="flex justify-end gap-1.5">

@@ -232,7 +232,7 @@ function ProfileMoreActions({
       {open && createPortal(
         <div
           ref={menuRef}
-          className="fixed z-[9999] w-32 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-1.5 shadow-xl"
+          className="fixed z-[9999] w-32 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-surface)] p-1.5 shadow-[var(--shadow-lg)] animate-scale-in"
           style={{ top: menuPosition.top, left: menuPosition.left }}
         >
           <button
