@@ -22,9 +22,6 @@ jobs:
         with:
           package-manager: npm
           path: docs
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/dist
 
   deploy:
     needs: build
