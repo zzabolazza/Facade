@@ -1,13 +1,30 @@
 ---
 const BASE = import.meta.env.BASE_URL
+
+const demoNavItems = [
+  { label: '实例列表', code: '01', icon: '<rect x="3" y="4" width="18" height="15" rx="2"/><path d="M3 9h18"/>' },
+  { label: '内核管理', code: '02', icon: '<rect x="7" y="7" width="10" height="10" rx="2"/><path d="M9 2v3m6-3v3M9 19v3m6-3v3M2 9h3m-3 6h3m14-6h3m-3 6h3"/>' },
+  { label: '插件管理', code: '03', icon: '<path d="M8 3h4v4h4v4h4v4h-4v4h-4v-4H8v4H4v-4H2v-4h2V7h4z"/>' },
+  { label: '代理配置', code: '04', icon: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14 0 18M12 3c-3 3.5-3 14 0 18"/>' },
+  { label: '默认书签', code: '05', icon: '<path d="M6 4h12v17l-6-4-6 4z"/>' },
+  { label: '标签管理', code: '06', icon: '<path d="m3 12 9 9 9-9-9-9H3z"/><circle cx="8" cy="8" r="1.3"/>' },
+  { label: '系统设置', code: '07', icon: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M19 5l-2 2M7 17l-2 2"/>' },
+  { label: '日志查看', code: '08', icon: '<path d="M6 3h9l3 3v15H6z"/><path d="M9 11h6M9 15h6"/>' },
+]
+
+const demoRows = [
+  { name: '北美商城', tag: '电商', status: '运行中', country: 'us', countryCode: 'US', proxy: '洛杉矶节点', latency: '42ms', core: 'Chromium 126', code: 'N7K4PX', cdp: '127.0.0.1:9222', keywords: ['Amazon', 'Shopify'], updated: '刚刚', tone: 'running' },
+  { name: '新加坡投放', tag: '广告', status: '已停止', country: 'sg', countryCode: 'SG', proxy: '新加坡节点', latency: '68ms', core: 'Chromium 124', code: 'S2M8QF', cdp: '-', keywords: ['TikTok', 'Ads'], updated: '3 分钟前', tone: 'stopped' },
+  { name: '日本内容号', tag: '内容', status: '运行中', country: 'jp', countryCode: 'JP', proxy: '东京节点', latency: '51ms', core: 'Chromium 126', code: 'J9R3WD', cdp: '127.0.0.1:9224', keywords: ['Content'], updated: '8 分钟前', tone: 'running' },
+]
 ---
 
-<section id="top" class="relative overflow-hidden pb-24 pt-32 sm:pt-36 lg:min-h-[880px] lg:pb-32 lg:pt-44">
+<section id="top" class="relative flex min-h-[100svh] items-center overflow-hidden pt-20">
   <div class="page-grid pointer-events-none absolute inset-x-0 top-0 h-[760px]"></div>
   <div class="pointer-events-none absolute left-[8%] top-28 h-72 w-72 rounded-full bg-violet-600/10 blur-[100px]"></div>
   <div class="pointer-events-none absolute right-[4%] top-52 h-80 w-80 rounded-full bg-cyan-400/10 blur-[120px]"></div>
 
-  <div class="relative mx-auto grid max-w-7xl items-center gap-16 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 xl:gap-14">
+  <div class="relative mx-auto grid w-full max-w-7xl items-center gap-16 px-6 lg:grid-cols-[0.9fr_1.1fr] lg:gap-10 xl:gap-14">
     <div class="max-w-2xl">
       <a
         href="https://github.com/zzabolazza/Facade/releases/tag/v1.3.6"
@@ -64,108 +81,144 @@ const BASE = import.meta.env.BASE_URL
 
     <div class="relative mx-auto w-full max-w-[760px]">
       <div class="pointer-events-none absolute -inset-8 rounded-[40px] bg-gradient-to-br from-indigo-500/20 via-transparent to-cyan-400/15 blur-3xl"></div>
-      <div class="relative overflow-hidden rounded-[22px] border border-white/[0.13] bg-[#0b0f19] shadow-[0_40px_100px_rgba(0,0,0,.55)]">
-        <div class="flex h-11 items-center border-b border-white/[0.07] bg-white/[0.025] px-4">
-          <div class="flex gap-1.5">
-            <span class="h-2.5 w-2.5 rounded-full bg-[#ff665c]"></span>
-            <span class="h-2.5 w-2.5 rounded-full bg-[#ffbd45]"></span>
-            <span class="h-2.5 w-2.5 rounded-full bg-[#26c845]"></span>
-          </div>
-          <div class="mx-auto flex items-center gap-2 pr-10 text-[10px] font-medium text-[#7f899f]">
-            <img src={`${BASE}appicon.png`} alt="" class="h-4 w-4 rounded-[4px]" />
-            Facade Workspace
+      <div class="relative overflow-hidden rounded-[18px] border border-white/[0.15] bg-[#f3f5fa] shadow-[0_40px_100px_rgba(0,0,0,.55)]">
+        <div class="flex h-7 items-center border-b border-[#dfe3ec] bg-[#f5f6f9] px-2.5 text-[8px] font-medium text-[#4c5362]">
+          <img src={`${BASE}appicon.png`} alt="" class="mr-1.5 h-3.5 w-3.5 rounded-[3px]" />
+          Facade
+          <div class="ml-auto flex h-full items-center text-[#657085]">
+            <span class="flex h-full w-8 items-center justify-center">—</span>
+            <span class="flex h-full w-8 items-center justify-center">□</span>
+            <span class="flex h-full w-8 items-center justify-center">×</span>
           </div>
         </div>
 
-        <div class="grid min-h-[390px] grid-cols-[76px_1fr] sm:min-h-[455px] sm:grid-cols-[154px_1fr]">
-          <aside class="border-r border-white/[0.07] bg-[#0c101b] p-3 sm:p-4">
-            <div class="mb-6 hidden items-center gap-2.5 px-1 sm:flex">
-              <img src={`${BASE}appicon.png`} alt="" class="h-7 w-7 rounded-lg" />
-              <span class="text-[11px] font-bold tracking-[0.14em] text-white">FACADE</span>
-            </div>
-            <nav class="space-y-1.5 text-[10px] font-medium text-[#778198]">
-              <div class="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500/20 to-blue-500/10 px-2 py-2.5 text-indigo-200 sm:justify-start sm:px-3">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="15" rx="2" /><path d="M3 9h18" /></svg>
-                <span class="hidden sm:inline">浏览器实例</span>
-              </div>
-              <div class="flex items-center justify-center gap-2 rounded-lg px-2 py-2.5 sm:justify-start sm:px-3">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18" /></svg>
-                <span class="hidden sm:inline">代理资源池</span>
-              </div>
-              <div class="flex items-center justify-center gap-2 rounded-lg px-2 py-2.5 sm:justify-start sm:px-3">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path d="M8 4h8v4h4v8h-4v4H8v-4H4V8h4V4Z" /></svg>
-                <span class="hidden sm:inline">内核管理</span>
-              </div>
-              <div class="flex items-center justify-center gap-2 rounded-lg px-2 py-2.5 sm:justify-start sm:px-3">
-                <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" /><path d="m4 7.5 8 4.5 8-4.5M12 12v9" /></svg>
-                <span class="hidden sm:inline">扩展管理</span>
-              </div>
-            </nav>
-          </aside>
-
-          <div class="min-w-0 bg-[#090d17] p-4 sm:p-5 lg:p-6">
-            <div class="flex items-start justify-between gap-3">
-              <div>
-                <h2 class="text-sm font-semibold text-white sm:text-base">浏览器实例</h2>
-                <p class="mt-1 hidden text-[10px] text-[#6f7990] sm:block">管理隔离环境、代理与启动状态</p>
-              </div>
-              <button class="flex h-8 items-center gap-1.5 rounded-lg bg-indigo-500 px-2.5 text-[9px] font-semibold text-white sm:px-3">
-                <span class="text-sm leading-none">＋</span><span class="hidden sm:inline">新增实例</span>
-              </button>
-            </div>
-
-            <div class="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
-              <div class="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 sm:p-3.5">
-                <p class="text-[8px] text-[#69748b] sm:text-[9px]">全部实例</p>
-                <p class="mt-1 text-lg font-semibold text-white sm:text-2xl">24</p>
-              </div>
-              <div class="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 sm:p-3.5">
-                <p class="text-[8px] text-[#69748b] sm:text-[9px]">运行中</p>
-                <p class="mt-1 text-lg font-semibold text-emerald-400 sm:text-2xl">08</p>
-              </div>
-              <div class="rounded-xl border border-white/[0.07] bg-white/[0.025] p-2.5 sm:p-3.5">
-                <p class="text-[8px] text-[#69748b] sm:text-[9px]">代理可用</p>
-                <p class="mt-1 text-lg font-semibold text-cyan-300 sm:text-2xl">96%</p>
+        <div class="grid h-[400px] grid-cols-[82px_1fr] sm:h-[438px] sm:grid-cols-[126px_1fr]">
+          <aside class="flex min-w-0 flex-col bg-gradient-to-b from-[#12141c] to-[#181b26] px-2 text-[#a9acc0] sm:px-2.5">
+            <div class="flex h-[46px] items-center justify-center gap-2 sm:justify-start sm:px-1.5">
+              <img src={`${BASE}appicon.png`} alt="" class="h-6 w-6 rounded-md" />
+              <div class="hidden min-w-0 sm:block">
+                <div class="text-[10px] font-extrabold text-white">Facade</div>
+                <div class="font-mono text-[6px] tracking-[0.08em] text-[#666a7f]">Endless Faces</div>
               </div>
             </div>
 
-            <div class="mt-4 flex h-8 items-center gap-2 rounded-lg border border-white/[0.07] bg-white/[0.02] px-3 text-[9px] text-[#657087]">
-              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
-              搜索名称、Code 或标签
-            </div>
-
-            <div class="mt-3 overflow-hidden rounded-xl border border-white/[0.07]">
-              <div class="grid grid-cols-[1.5fr_.8fr_.65fr] bg-white/[0.035] px-3 py-2 text-[8px] font-medium uppercase tracking-wider text-[#657087] sm:grid-cols-[1.45fr_1fr_.8fr_.55fr] sm:px-4">
-                <span>实例</span><span>代理</span><span>状态</span><span class="hidden text-right sm:block">操作</span>
-              </div>
-              {[
-                ['A', 'Amazon US', 'US · Seattle', '运行中', 'from-indigo-500 to-violet-500'],
-                ['S', 'Shopify Store', 'JP · Tokyo', '已停止', 'from-cyan-500 to-blue-500'],
-                ['M', 'Meta Business', 'DE · Frankfurt', '运行中', 'from-fuchsia-500 to-pink-500'],
-                ['T', 'TikTok Shop', 'SG · Singapore', '已停止', 'from-amber-400 to-orange-500'],
-              ].map((row, index) => (
-                <div class:list={["grid grid-cols-[1.5fr_.8fr_.65fr] items-center px-3 py-2.5 text-[8px] sm:grid-cols-[1.45fr_1fr_.8fr_.55fr] sm:px-4 sm:py-3 sm:text-[9px]", index < 3 && "border-b border-white/[0.055]"]}>
-                  <div class="flex min-w-0 items-center gap-2">
-                    <span class:list={["flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-[8px] font-bold text-white", row[4]]}>{row[0]}</span>
-                    <span class="truncate font-medium text-[#dce2f1]">{row[1]}</span>
-                  </div>
-                  <span class="truncate text-[#7f899f]">{row[2]}</span>
-                  <span class:list={["inline-flex items-center gap-1", row[3] === '运行中' ? 'text-emerald-400' : 'text-[#707b92]']}>
-                    <i class:list={["h-1.5 w-1.5 rounded-full", row[3] === '运行中' ? 'bg-emerald-400' : 'bg-[#505a70]']}></i>{row[3]}
+            <nav class="space-y-0.5">
+              {demoNavItems.map((item, index) => (
+                <div class:list={[
+                  'relative flex h-[31px] items-center justify-center rounded-md border text-[8px] sm:grid sm:grid-cols-[16px_minmax(0,1fr)_14px] sm:gap-1.5 sm:px-2',
+                  index === 0 ? 'border-white/10 bg-[#1f2333] text-white' : 'border-transparent',
+                ]}>
+                  {index === 0 && <span class="absolute -left-2 h-4 w-0.5 rounded-r bg-[#6578ff] sm:-left-2.5"></span>}
+                  <span class="flex h-4 w-4 items-center justify-center">
+                    <svg class="h-3.5 w-3.5 opacity-90" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" set:html={item.icon} />
                   </span>
-                  <span class="hidden text-right text-indigo-300 sm:block">{row[3] === '运行中' ? '管理' : '启动'}</span>
+                  <span class="hidden min-w-0 truncate leading-none sm:block">{item.label}</span>
+                  <span class:list={['hidden w-3.5 text-right font-mono text-[6px] leading-none sm:block', index === 0 ? 'text-[#7c8dff]' : 'text-[#55596d]']}>{item.code}</span>
                 </div>
               ))}
+            </nav>
+
+            <div class="mt-auto flex h-10 items-center justify-center text-[#777c91]">
+              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="m14 7-5 5 5 5" /></svg>
             </div>
+          </aside>
+
+          <div class="min-w-0 bg-[#f4f6fb]">
+            <header class="flex h-[42px] items-center border-b border-[#dde1ea] bg-white px-3 sm:px-4">
+              <div class="flex items-baseline gap-1.5">
+                <strong class="text-[10px] text-[#151925] sm:text-[11px]">实例列表</strong>
+                <span class="hidden text-[7px] text-[#8a92a2] sm:inline">/browser/list</span>
+              </div>
+              <div class="ml-auto hidden h-6 w-36 items-center gap-1.5 rounded-md border border-[#e2e5ec] bg-[#f7f8fb] px-2 text-[7px] text-[#9aa1af] md:flex">
+                <svg class="h-2.5 w-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+                搜索实例 / 分组 / 标签...
+              </div>
+              <div class="ml-2 flex h-6 items-center gap-0.5 text-[#8b93a4]">
+                <span class="relative flex h-6 w-6 items-center justify-center rounded-md">
+                  <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+                  <i class="absolute -right-0.5 -top-0.5 flex h-2.5 min-w-2.5 items-center justify-center rounded-full bg-[#ef4757] px-0.5 text-[5px] not-italic leading-none text-white">3</i>
+                </span>
+                <span class="hidden h-6 w-6 items-center justify-center rounded-md sm:flex">
+                  <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11a3 3 0 0 1 3 3v15a3 3 0 0 0-3-3H4z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H14v18a3 3 0 0 1 3-3h3z"/></svg>
+                </span>
+                <span class="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#7c5cff] to-[#4b6eff] text-[7px] font-bold text-white">AB</span>
+              </div>
+            </header>
+
+            <main class="p-2.5 sm:p-3.5">
+              <div class="flex items-center justify-between gap-2">
+                <p class="hidden truncate text-[7px] text-[#8a92a2] sm:block">管理全部浏览器配置与实例：启动、停止、代理切换、标签分组、批量操作。</p>
+                <div class="ml-auto flex gap-1 text-[7px] font-semibold">
+                  <button class="h-6 rounded-md border border-[#e0e4ec] bg-white px-2 text-[#3f4654]">↻ 刷新</button>
+                  <button class="hidden h-6 rounded-md border border-[#e0e4ec] bg-white px-2 text-[#3f4654] sm:block">↓ 导入</button>
+                  <button class="hidden h-6 rounded-md border border-[#e0e4ec] bg-white px-2 text-[#3f4654] sm:block">↑ 导出</button>
+                  <button class="h-6 rounded-md bg-[#5268f4] px-2 text-white">▷ 新建配置</button>
+                </div>
+              </div>
+
+              <div class="mt-2.5 grid grid-cols-4 gap-1.5 sm:gap-2">
+                {[
+                  ['实例总数', '12', 'text-[#171b26]'],
+                  ['运行中', '5', 'text-[#1cbd83]'],
+                  ['已停止', '7', 'text-[#171b26]'],
+                  ['代理异常', '1', 'text-[#ef4757]'],
+                ].map((stat) => (
+                  <div class="rounded-md border border-[#dde2eb] bg-white px-2 py-2 sm:px-2.5">
+                    <div class="text-[6px] font-semibold text-[#939baa] sm:text-[7px]">{stat[0]}</div>
+                    <div class:list={['mt-0.5 text-[14px] font-extrabold leading-none sm:text-[16px]', stat[2]]}>{stat[1]}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div class="mt-2.5 flex h-9 items-center gap-1.5 rounded-md border border-[#dde2eb] bg-white px-2 text-[6px] text-[#8c94a3] sm:text-[7px]">
+                <span class="rounded bg-[#f3f5f8] px-1.5 py-1 text-[#596170]">▽ 筛选</span>
+                <span class="flex h-6 min-w-0 flex-1 items-center rounded border border-[#e2e5ec] px-2">搜索名称 / 快捷码 / 关键字...</span>
+                <span class="hidden h-6 items-center rounded border border-[#e2e5ec] px-2 sm:flex">全部状态⌄</span>
+                <span class="hidden h-6 items-center rounded border border-[#e2e5ec] px-2 md:flex">全部代理⌄</span>
+                <span class="h-6 rounded border border-[#e2e5ec] px-1.5 leading-6">▦ ≡</span>
+              </div>
+
+              <div class="mt-2.5 overflow-hidden rounded-md border border-[#dde2eb] bg-white">
+                <div class="grid grid-cols-[.24fr_1.05fr_.58fr_.72fr_1.15fr_.68fr_.78fr_.75fr_.65fr_.55fr] items-center bg-[#fafbfc] px-2 py-2 text-[5px] font-semibold text-[#8b94a4] sm:text-[5.5px]">
+                  <span class="h-2.5 w-2.5 rounded-[2px] border border-[#aeb5c1]"></span>
+                  <span>实例名称</span><span>状态</span><span>核心</span><span>代理</span><span>快捷打开码</span><span>CDP</span><span>关键字</span><span>上次更新</span><span class="text-right">操作</span>
+                </div>
+                {demoRows.map((row, index) => (
+                  <div class:list={[
+                    'grid grid-cols-[.24fr_1.05fr_.58fr_.72fr_1.15fr_.68fr_.78fr_.75fr_.65fr_.55fr] items-center px-2 py-2 text-[5px] text-[#5d6574] sm:py-2.5 sm:text-[5.5px]',
+                    index < demoRows.length - 1 && 'border-b border-[#edf0f4]',
+                  ]}>
+                    <span class="h-2.5 w-2.5 rounded-[2px] border border-[#aeb5c1]"></span>
+                    <div class="min-w-0">
+                      <strong class="block truncate font-semibold text-[#202532]">{row.name}</strong>
+                      <span class="mt-0.5 inline-block rounded bg-[#f1f3f7] px-1 text-[5px] text-[#7d8595]">{row.tag}</span>
+                    </div>
+                    <span class:list={[
+                      'inline-flex w-fit items-center gap-1 rounded px-1.5 py-1 font-semibold',
+                      row.tone === 'running' ? 'bg-[#e7f8f1] text-[#17aa76]' : 'bg-[#fff4dd] text-[#d99a22]',
+                    ]}>
+                      <i class:list={['h-1 w-1 rounded-full', row.tone === 'running' ? 'bg-[#20bd83]' : 'bg-[#e2a337]']}></i>{row.status}
+                    </span>
+                    <span class="truncate">{row.core}</span>
+                    <span class="flex min-w-0 items-center gap-1">
+                      <img src={`${BASE}twemoji/flags/${row.country}.svg`} alt={`${row.countryCode} 国旗`} class="h-3 w-4 shrink-0 rounded-[1px] object-cover" />
+                      <b class="shrink-0 font-semibold text-[#252b37]">{row.countryCode}</b>
+                      <span class="truncate text-[#252b37]">- {row.proxy}</span>
+                      <small class="hidden shrink-0 text-[4.5px] text-[#23ad79] xl:inline">{row.latency}</small>
+                    </span>
+                    <span class="w-fit rounded bg-[#eef0ff] px-1 py-0.5 font-mono text-[6px] text-[#6171d8]">{row.code}</span>
+                    <span class="truncate font-mono text-[4.5px] text-[#6b7484]">{row.cdp}</span>
+                    <span class="flex min-w-0 gap-0.5 overflow-hidden">
+                      {row.keywords.map((keyword) => <i class="truncate rounded bg-[#f0f2f6] px-1 py-0.5 not-italic text-[#6f7787]">{keyword}</i>)}
+                    </span>
+                    <span class="truncate text-[#7b8493]">{row.updated}</span>
+                    <span class="flex items-center justify-end gap-1 text-[#727b8b]"><i>{row.tone === 'running' ? '□' : '▷'}</i><i class="hidden sm:inline">⚙</i><i>•••</i></span>
+                  </div>
+                ))}
+              </div>
+            </main>
           </div>
         </div>
-      </div>
-
-      <div class="absolute -bottom-5 -left-4 hidden items-center gap-3 rounded-2xl border border-white/10 bg-[#111625]/90 px-4 py-3 shadow-2xl backdrop-blur-xl sm:flex">
-        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-400/10 text-emerald-400">
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6" /></svg>
-        </span>
-        <span><strong class="block text-[11px] text-white">代理连接正常</strong><small class="mt-0.5 block text-[9px] text-muted">延迟 42ms · US West</small></span>
       </div>
     </div>
   </div>

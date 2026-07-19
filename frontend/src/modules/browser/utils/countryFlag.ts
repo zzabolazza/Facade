@@ -55,27 +55,22 @@ export function normalizeCountryCode(country: string): string {
   return COUNTRY_NAME_TO_CODE[value.toLowerCase()] || ''
 }
 
-/** Convert ISO 3166-1 alpha-2 to regional-indicator flag emoji (e.g. US → 🇺🇸). */
-export function countryCodeToFlagEmoji(code: string): string {
+/** Resolve an ISO 3166-1 alpha-2 code to its locally bundled Twemoji flag. */
+export function countryCodeToTwemojiFlagPath(code: string): string {
   const normalized = (code || '').trim().toUpperCase()
   if (!/^[A-Z]{2}$/.test(normalized)) return ''
-  const A = 0x1f1e6
-  const base = 'A'.charCodeAt(0)
-  return String.fromCodePoint(
-    A + (normalized.charCodeAt(0) - base),
-    A + (normalized.charCodeAt(1) - base),
-  )
+  return `/twemoji/flags/${normalized.toLowerCase()}.svg`
 }
 
 export function resolveProxyCountryDisplay(
   health: Pick<ProxyIPHealthResult, 'ok' | 'country' | 'countryCode'> | null | undefined,
-): { code: string; flag: string } | null {
+): { code: string; flagSrc: string } | null {
   if (!health?.ok) return null
   const code = normalizeCountryCode(health.countryCode || '') || normalizeCountryCode(health.country || '')
   if (!code) return null
-  const flag = countryCodeToFlagEmoji(code)
-  if (!flag) return null
-  return { code, flag }
+  const flagSrc = countryCodeToTwemojiFlagPath(code)
+  if (!flagSrc) return null
+  return { code, flagSrc }
 }
 
 export function parseProxyIPHealthResult(raw?: string): ProxyIPHealthResult | null {
@@ -93,7 +88,7 @@ export function resolveProfileProxyCountryDisplay(
   proxyId: string,
   lastIPHealthJson: string | undefined,
   ipHealthMap: Record<string, ProxyIPHealthResult>,
-): { code: string; flag: string } | null {
+): { code: string; flagSrc: string } | null {
   const cached = proxyId ? ipHealthMap[proxyId] : undefined
   const persisted = parseProxyIPHealthResult(lastIPHealthJson)
   return resolveProxyCountryDisplay(cached) || resolveProxyCountryDisplay(persisted)

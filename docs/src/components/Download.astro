@@ -30,15 +30,11 @@ const platforms = [
 const releaseUrl = 'https://github.com/zzabolazza/Facade/releases/tag/v1.3.6'
 ---
 
-<section id="download" class="relative overflow-hidden border-t border-white/[0.06] py-24 sm:py-32">
+<section id="download" class="relative flex min-h-[calc(100svh-5rem)] scroll-mt-20 items-center overflow-hidden border-t border-white/[0.06] py-8">
   <div class="pointer-events-none absolute inset-x-0 bottom-0 mx-auto h-[520px] max-w-5xl rounded-full bg-gradient-to-r from-indigo-600/10 via-blue-500/5 to-cyan-400/10 blur-[100px]"></div>
-  <div class="relative mx-auto max-w-7xl px-6">
+  <div class="relative mx-auto w-full max-w-7xl px-6">
     <div class="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
       <div>
-        <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.07] px-3 py-1.5 text-xs font-medium text-emerald-300">
-          <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-          最新稳定版 v1.3.6
-        </div>
         <h2 class="text-3xl font-bold tracking-[-0.035em] text-white sm:text-5xl">选择你的平台</h2>
         <p class="mt-4 max-w-xl text-sm leading-7 text-muted sm:text-base">所有版本均通过 GitHub Releases 分发。下载后即可在本地创建隔离浏览器环境。</p>
       </div>
@@ -87,9 +83,5 @@ const releaseUrl = 'https://github.com/zzabolazza/Facade/releases/tag/v1.3.6'
       ))}
     </div>
 
-    <div class="mt-6 flex flex-col justify-between gap-3 rounded-2xl border border-white/[0.07] bg-white/[0.02] px-5 py-4 text-xs text-muted sm:flex-row sm:items-center">
-      <span>下载前请阅读对应平台说明；macOS 当前为未签名内测包。</span>
-      <a href="https://github.com/zzabolazza/Facade/blob/master/CHANGELOG.md" target="_blank" rel="noopener noreferrer" class="shrink-0 font-medium text-[#b1bad0] transition hover:text-white">查看更新日志</a>
-    </div>
   </div>
 </section>

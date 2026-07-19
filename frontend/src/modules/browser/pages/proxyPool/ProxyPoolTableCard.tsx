@@ -6,6 +6,7 @@ import type { ProxyIPHealthResult } from '../../types'
 
 import { BUILTIN_PROXY_IDS, type ProxyDisplayInfo } from './helpers'
 import { resolveProxyCountryDisplay } from '../../utils/countryFlag'
+import { CountryFlagIcon } from '../../components/CountryFlagIcon'
 
 interface ProxyPoolTableCardProps {
   allFilteredSelected: boolean
@@ -146,7 +147,8 @@ export function ProxyPoolTableCard({
     if (!display) return <span className="text-[var(--color-text-muted)] text-xs">-</span>
     return (
       <span className="text-xs text-[var(--color-text-primary)] whitespace-nowrap" title={display.code}>
-        {display.flag} {display.code}
+        <CountryFlagIcon code={display.code} src={display.flagSrc} className="mr-1 h-4 w-4" />
+        {display.code}
       </span>
     )
   }

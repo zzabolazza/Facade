@@ -12,6 +12,7 @@ import { readIPHealthCache } from '../pages/proxyPool/storage'
 import { resolveProfileProxyCountryDisplay } from '../utils/countryFlag'
 import type { BrowserViewMode } from './BrowserListLayout'
 import { CdpUrlCell, KeywordInlineRow, LaunchCodeCell } from './BrowserListWidgets'
+import { CountryFlagIcon } from './CountryFlagIcon'
 
 type ProfileStatusVariant = 'default' | 'success' | 'error' | 'warning' | 'info'
 
@@ -84,7 +85,7 @@ function ProxyInlineActions({
 }: {
   profile: BrowserProfile
   proxy?: BrowserProxy
-  countryDisplay?: { code: string; flag: string } | null
+  countryDisplay?: { code: string; flagSrc: string } | null
   isBusy: boolean
   onOpenProxyPicker: (profile: BrowserProfile) => void
   maxWidthClass?: string
@@ -102,7 +103,7 @@ function ProxyInlineActions({
   const displayResult = speedResult || historyResult
   const canTest = !!profile.proxyId || !!profile.proxyConfig.trim()
   const proxyLabel = formatProxyLabel(profile, proxy)
-  const title = countryDisplay ? `${countryDisplay.flag} ${countryDisplay.code} · ${proxyLabel}` : proxyLabel
+  const title = countryDisplay ? `${countryDisplay.code} · ${proxyLabel}` : proxyLabel
 
   const handleTest = async () => {
     if (testing || !canTest) return
@@ -128,7 +129,8 @@ function ProxyInlineActions({
     <div className={`inline-flex ${maxWidthClass} items-center gap-1.5 text-xs`} title={title}>
       {countryDisplay && (
         <span className="shrink-0 whitespace-nowrap text-[var(--color-text-primary)]" title={countryDisplay.code}>
-          {countryDisplay.flag} {countryDisplay.code}
+          <CountryFlagIcon code={countryDisplay.code} src={countryDisplay.flagSrc} className="mr-1 h-4 w-4" />
+          {countryDisplay.code}
         </span>
       )}
       {countryDisplay && <span className="shrink-0 text-[var(--color-text-muted)]">-</span>}
@@ -337,7 +339,7 @@ function BrowserProfileCard({
 }: {
   profile: BrowserProfile
   proxy: BrowserProxy | undefined
-  countryDisplay: { code: string; flag: string } | null
+  countryDisplay: { code: string; flagSrc: string } | null
   isSelected: boolean
   status: ProfileStatus
   coreLabel: string

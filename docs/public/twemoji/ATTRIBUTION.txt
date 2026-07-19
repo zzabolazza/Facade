@@ -1,0 +1,9 @@
+Twemoji graphics
+https://github.com/twitter/twemoji
+
+Copyright 2020 Twitter, Inc and other contributors.
+Graphics licensed under CC-BY 4.0:
+https://creativecommons.org/licenses/by/4.0/
+
+The flag SVG files in this directory are sourced from the
+@iconify-json/twemoji package, which distributes the Twemoji icon set.
