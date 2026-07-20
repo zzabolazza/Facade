@@ -82,6 +82,16 @@ function Install-FrontendDeps {
     }
 }
 
+function Generate-Bindings {
+    Write-Host "Generating Wails bindings..."
+    Push-Location $RootDir
+    try {
+        wails generate module
+    } finally {
+        Pop-Location
+    }
+}
+
 function Build-Frontend {
     Write-Host "Building frontend assets..."
     Push-Location "$RootDir\frontend"
@@ -105,6 +115,7 @@ function Run-Stable {
 
     Prepare-Env
     Resolve-WailsDevServer
+    Generate-Bindings
     Install-FrontendDeps
     Build-Frontend
 
@@ -128,6 +139,7 @@ function Run-Live {
 
     Prepare-Env
     Resolve-WailsDevServer
+    Generate-Bindings
 
     Push-Location "$RootDir\frontend"
     try {

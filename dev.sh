@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 MODE="${1:-stable}"
 
 usage() {
@@ -48,6 +48,11 @@ resolve_wails_devserver() {
 
   WAILS_DEVSERVER_ADDRESS="$host:$port"
   export WAILS_DEVSERVER_ADDRESS
+}
+
+generate_bindings() {
+  echo "Generating Wails bindings..."
+  (cd "$ROOT_DIR" && wails generate module)
 }
 
 prepare_env() {
@@ -98,6 +103,7 @@ run_stable() {
 
   prepare_env
   resolve_wails_devserver
+  generate_bindings
   cd "$ROOT_DIR/frontend"
   install_frontend_deps
   build_frontend
@@ -125,6 +131,7 @@ run_live() {
 
   prepare_env
   resolve_wails_devserver
+  generate_bindings
 
   cd "$ROOT_DIR/frontend"
   install_frontend_deps
