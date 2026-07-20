@@ -19,18 +19,30 @@ export interface BrowserBackupActionResult {
   }>
 }
 
-export async function exportFullBrowserBackup(): Promise<BrowserBackupActionResult> {
+export async function exportFullBrowserBackup(password: string): Promise<BrowserBackupActionResult> {
   const bindings: any = await getBindings()
   if (!bindings?.BackupExportPackage) {
     return { cancelled: false, message: '当前环境不支持全量备份' }
   }
-  return (await bindings.BackupExportPackage()) || {}
+  return (await bindings.BackupExportPackage(password)) || {}
 }
 
-export async function importFullBrowserBackup(resetFirst: boolean): Promise<BrowserBackupActionResult> {
+export async function pickFullBrowserBackupFile(): Promise<BrowserBackupActionResult & { path?: string }> {
+  const bindings: any = await getBindings()
+  if (!bindings?.BackupPickImportFile) {
+    return { cancelled: true, message: '当前环境不支持选择备份文件' }
+  }
+  return (await bindings.BackupPickImportFile()) || { cancelled: true }
+}
+
+export async function importFullBrowserBackup(
+  resetFirst: boolean,
+  password: string,
+  zipPath: string,
+): Promise<BrowserBackupActionResult> {
   const bindings: any = await getBindings()
   if (!bindings?.BackupImportPackage) {
     return { cancelled: false, message: '当前环境不支持导入备份' }
   }
-  return (await bindings.BackupImportPackage(resetFirst)) || {}
+  return (await bindings.BackupImportPackage(resetFirst, password, zipPath)) || {}
 }
