@@ -3,6 +3,7 @@ package backup
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"facade/backend/internal/config"
@@ -58,6 +59,40 @@ func TestBuildScopeExportsDatabaseSeparatelyFromDataTree(t *testing.T) {
 	for path, found := range wantExcluded {
 		if !found {
 			t.Fatalf("database sidecar was not excluded from data tree: %s", path)
+		}
+	}
+}
+
+func TestBuildScopeDoesNotExportCoreBinaries(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "data"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "config.yaml"), []byte("app: {}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	coreDir := filepath.Join(root, "Applications", "Chromium.app")
+	if err := os.MkdirAll(coreDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	cfg := config.DefaultConfig()
+	cfg.Browser.Cores = []config.BrowserCore{
+		{CoreId: "chromium", CoreName: "Chromium", CorePath: coreDir, IsDefault: true},
+	}
+
+	scope, err := BuildScope(BuildOptions{AppRoot: root, Config: cfg})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range scope.Entries {
+		if entry.Category == CategoryCoreData {
+			t.Fatalf("scope must not include core binaries: %+v", entry)
+		}
+		if strings.Contains(entry.ArchivePath, "cores/external") {
+			t.Fatalf("scope must not archive external cores: %+v", entry)
+		}
+		if strings.HasPrefix(entry.ID, "browser_core_external_") {
+			t.Fatalf("scope must not list external core entries: %+v", entry)
 		}
 	}
 }

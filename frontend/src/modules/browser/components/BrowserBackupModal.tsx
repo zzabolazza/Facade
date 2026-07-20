@@ -65,7 +65,7 @@ export function BrowserBackupModal({
       )}
     >
       <div className="space-y-4 text-sm text-[var(--color-text-secondary)]">
-        <FormItem label="全量备份密码" required hint="至少 8 个字符；导出和导入均必填">
+        <FormItem label="全量备份密码" required hint="至少 8 个字符；AES ZIP 密码，7-Zip 可解压">
           <Input type="password" value={password} autoComplete="current-password" onChange={event => setPassword(event.target.value)} />
         </FormItem>
         <div className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-secondary)] p-3">
@@ -76,7 +76,7 @@ export function BrowserBackupModal({
           <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-[var(--color-text-muted)]">
             <span>实例名称 / 分组 / 标签</span>
             <span>代理池 / 订阅 / 测速结果</span>
-            <span>内核配置 / 内核文件</span>
+            <span>内核配置路径</span>
             <span>应用书签 / 插件配置</span>
             <span>实例浏览器数据目录</span>
             <span>Cookie / LocalStorage / IndexedDB</span>
@@ -85,7 +85,7 @@ export function BrowserBackupModal({
 
         <div className="rounded-lg border border-[var(--color-border-default)] p-3 text-xs leading-5 text-[var(--color-text-muted)]">
           <p><span className="font-medium text-[var(--color-text-secondary)]">备份选中：</span>导出当前选中的 {selectedCount} 个实例及浏览器用户数据，适合迁移少量实例。</p>
-          <p>完整灾备请用全量备份，它会额外包含完整代理池、内核、数据库和应用级配置。</p>
+          <p>完整灾备请用全量加密备份（AES 密码 ZIP，7-Zip 可解压）；包含完整代理池、内核路径配置、数据库和应用级配置，不包含本机内核二进制文件。</p>
         </div>
 
         {runningCount > 0 && (
@@ -101,7 +101,7 @@ export function BrowserBackupModal({
         </div>
 
         <div className="grid grid-cols-1 gap-2 text-xs text-[var(--color-text-muted)]">
-          <p><span className="font-medium text-[var(--color-text-secondary)]">全量备份：</span>使用密码加密配置、数据库、代理、内核和实例浏览器数据。</p>
+          <p><span className="font-medium text-[var(--color-text-secondary)]">全量备份：</span>导出 AES 密码保护 ZIP（含配置、数据库、代理、内核路径配置和实例浏览器数据）；不覆盖本机内核目录。</p>
           <p><span className="font-medium text-[var(--color-text-secondary)]">合并导入：</span>保留当前数据，按 ID、路径、URL 等规则跳过重复项。</p>
           <p><span className="font-medium text-[var(--color-text-secondary)]">完整恢复：</span>以备份内容完整替换当前数据，已有内容不会保留。</p>
         </div>

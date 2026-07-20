@@ -1,7 +1,6 @@
 package backend
 
 import (
-	"archive/zip"
 	"encoding/json"
 	"facade/backend/internal/backup"
 	"fmt"
@@ -10,9 +9,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/yeka/zip"
 )
 
-func backupWritePackageZip(zipPath string, scope backup.Scope, manifest backup.Manifest, emitProgress func(phase string, progress int, message string, meta *backupProgressMeta)) (int, int, int, error) {
+func backupWritePackageZip(zipPath string, scope backup.Scope, manifest backup.Manifest, password string, emitProgress func(phase string, progress int, message string, meta *backupProgressMeta)) (int, int, int, error) {
 	emit := func(phase string, progress int, message string, meta *backupProgressMeta) {
 		if emitProgress != nil {
 			emitProgress(phase, progress, message, meta)
@@ -40,11 +41,7 @@ func backupWritePackageZip(zipPath string, scope backup.Scope, manifest backup.M
 		if err != nil {
 			return err
 		}
-		mw, err := w.Create("manifest.json")
-		if err != nil {
-			return err
-		}
-		if _, err := mw.Write(manifestData); err != nil {
+		if err := backupZipWriteBytes(w, "manifest.json", manifestData, password); err != nil {
 			return err
 		}
 		fileCount++
@@ -75,7 +72,7 @@ func backupWritePackageZip(zipPath string, scope backup.Scope, manifest backup.M
 			}
 			entryAddedFiles := 0
 			if info.IsDir() {
-				n, err := backupZipAddDir(w, entry.SourcePath, entry.ArchivePath, zipPath, entry.ExcludeSourcePaths)
+				n, err := backupZipAddDir(w, entry.SourcePath, entry.ArchivePath, zipPath, entry.ExcludeSourcePaths, password)
 				if err != nil {
 					return fmt.Errorf("写入目录失败(%s): %w", entry.ID, err)
 				}
@@ -88,7 +85,7 @@ func backupWritePackageZip(zipPath string, scope backup.Scope, manifest backup.M
 					emit("writing", progress, fmt.Sprintf("组件跳过：%s（导出文件本身）", meta.ComponentName), meta)
 					continue
 				}
-				if err := backupZipAddFile(w, entry.SourcePath, strings.TrimSuffix(entry.ArchivePath, "/")); err != nil {
+				if err := backupZipAddFile(w, entry.SourcePath, strings.TrimSuffix(entry.ArchivePath, "/"), password); err != nil {
 					return fmt.Errorf("写入文件失败(%s): %w", entry.ID, err)
 				}
 				fileCount++
@@ -127,7 +124,7 @@ func backupWritePackageZip(zipPath string, scope backup.Scope, manifest backup.M
 	return includedEntries, skippedEntries, fileCount, nil
 }
 
-func backupZipAddDir(w *zip.Writer, srcDir, archiveBase, outputZipPath string, excludePaths []string) (int, error) {
+func backupZipAddDir(w *zip.Writer, srcDir, archiveBase, outputZipPath string, excludePaths []string, password string) (int, error) {
 	base := strings.TrimSuffix(filepath.ToSlash(strings.TrimSpace(archiveBase)), "/")
 	if base == "" {
 		return 0, fmt.Errorf("archive base 不能为空")
@@ -169,7 +166,7 @@ func backupZipAddDir(w *zip.Writer, srcDir, archiveBase, outputZipPath string, e
 			_, err := w.Create(strings.TrimSuffix(targetName, "/") + "/")
 			return err
 		}
-		if err := backupZipAddFile(w, path, targetName); err != nil {
+		if err := backupZipAddFile(w, path, targetName, password); err != nil {
 			return err
 		}
 		fileCount++
@@ -178,7 +175,7 @@ func backupZipAddDir(w *zip.Writer, srcDir, archiveBase, outputZipPath string, e
 	return fileCount, err
 }
 
-func backupZipAddFile(w *zip.Writer, srcFile, archivePath string) error {
+func backupZipAddFile(w *zip.Writer, srcFile, archivePath, password string) error {
 	info, err := os.Stat(srcFile)
 	if err != nil {
 		return err
@@ -195,6 +192,9 @@ func backupZipAddFile(w *zip.Writer, srcFile, archivePath string) error {
 	if header.Name == "" {
 		return fmt.Errorf("archivePath 不能为空")
 	}
+	if err := backupZipApplyPassword(header, password); err != nil {
+		return err
+	}
 	writer, err := w.CreateHeader(header)
 	if err != nil {
 		return err
@@ -206,4 +206,33 @@ func backupZipAddFile(w *zip.Writer, srcFile, archivePath string) error {
 	defer in.Close()
 	_, err = io.Copy(writer, in)
 	return err
+}
+
+func backupZipWriteBytes(w *zip.Writer, archivePath string, data []byte, password string) error {
+	header := &zip.FileHeader{
+		Name:   strings.TrimPrefix(filepath.ToSlash(strings.TrimSpace(archivePath)), "/"),
+		Method: zip.Deflate,
+	}
+	if header.Name == "" {
+		return fmt.Errorf("archivePath 不能为空")
+	}
+	if err := backupZipApplyPassword(header, password); err != nil {
+		return err
+	}
+	writer, err := w.CreateHeader(header)
+	if err != nil {
+		return err
+	}
+	_, err = writer.Write(data)
+	return err
+}
+
+func backupZipApplyPassword(header *zip.FileHeader, password string) error {
+	password = strings.TrimSpace(password)
+	if password == "" {
+		return nil
+	}
+	header.SetPassword(password)
+	header.SetEncryptionMethod(zip.AES256Encryption)
+	return nil
 }

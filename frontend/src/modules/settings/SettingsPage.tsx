@@ -97,18 +97,18 @@ export function SettingsPage() {
         : { phase: 'done', progress: 100, message: res.message || '导出完成' })
       toast.success(res.message || '导出完成')
     } catch (error: any) {
+      const message = typeof error === 'string' ? error : error?.message || '导出失败'
       setExportProgress(prev => ({
         phase: 'error',
         progress: prev?.progress ?? 0,
-        message: error?.message || '导出失败',
+        message,
       }))
       setExportLogs(prev => {
         const timestamp = new Date().toLocaleTimeString('zh-CN', { hour12: false })
-        const text = error?.message || '导出失败'
-        const next = [...prev, { id: Date.now() + Math.floor(Math.random() * 1000), phase: 'error', time: timestamp, text }]
+        const next = [...prev, { id: Date.now() + Math.floor(Math.random() * 1000), phase: 'error', time: timestamp, text: message }]
         return next.length > 120 ? next.slice(next.length - 120) : next
       })
-      toast.error(error?.message || '导出失败')
+      toast.error(message)
     } finally {
       setActionLoading('none')
     }
@@ -190,13 +190,14 @@ export function SettingsPage() {
       setImportModalOpen(false)
       setImportFilePath('')
       setImportProgress(null)
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = typeof error === 'string' ? error : (error as any)?.message || '加载失败'
       setImportProgress(prev => ({
         phase: 'error',
         progress: prev?.progress ?? 0,
-        message: error?.message || '加载失败',
+        message,
       }))
-      toast.error(error?.message || '加载失败')
+      toast.error(message)
     } finally {
       setActionLoading('none')
     }

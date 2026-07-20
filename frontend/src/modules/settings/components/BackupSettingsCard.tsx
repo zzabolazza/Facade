@@ -157,7 +157,7 @@ export function BackupSettingsCard({
             </div>
             <div className="min-w-0">
               <h3 className="text-[13.5px] font-semibold text-[var(--color-text-primary)]">导出完整备份</h3>
-              <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">将当前系统数据打包为强制密码保护的加密备份。</p>
+              <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">导出为 AES 密码保护的 ZIP，可用 7-Zip 等工具解压。</p>
             </div>
           </div>
           <div ref={menuRef} className="relative w-full sm:w-auto">
@@ -234,7 +234,7 @@ export function BackupSettingsCard({
             </div>
             <div className="min-w-0">
               <h3 className="text-[13.5px] font-semibold text-[var(--color-text-primary)]">导入系统备份</h3>
-              <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">从加密备份恢复数据，可选择合并导入或完整恢复。</p>
+              <p className="mt-1 text-xs leading-5 text-[var(--color-text-muted)]">从密码保护 ZIP 恢复数据，可选择合并导入或完整恢复。</p>
             </div>
           </div>
           <Button
@@ -274,7 +274,7 @@ export function BackupSettingsCard({
     <Modal
       open={exportPasswordOpen}
       onClose={() => { if (!actionRunning) setExportPasswordOpen(false) }}
-      title={exportTarget === 'webdav' ? '加密并上传到 WebDAV' : '导出本地加密备份'}
+      title={exportTarget === 'webdav' ? '加密并上传到 WebDAV' : '导出密码保护 ZIP'}
       width="440px"
       closable={!actionRunning}
       footer={(
@@ -291,7 +291,7 @@ export function BackupSettingsCard({
       )}
     >
       <div className="space-y-3">
-        <p className="text-xs leading-5 text-[var(--color-text-muted)]">备份将使用密码加密。密码不会保存，丢失后无法恢复备份。</p>
+        <p className="text-xs leading-5 text-[var(--color-text-muted)]">密码不会保存，丢失后无法恢复备份。</p>
         {exportTarget === 'webdav' && !webDAVSettings.url && (
           <p className="text-xs text-[var(--color-error)]">请先保存 WebDAV 设置。</p>
         )}
@@ -345,10 +345,10 @@ export function BackupImportModal({
             <FormItem label="备份文件">
               <Input value={fileName} readOnly title={filePath} />
             </FormItem>
-            <FormItem label="备份密码" required hint="仅支持加密备份">
+            <FormItem label="备份密码" required hint="ZIP 解压密码，至少 8 个字符">
               <Input type="password" autoFocus value={password} autoComplete="current-password" onChange={event => setPassword(event.target.value)} />
             </FormItem>
-            <p className="text-[13px] leading-5 text-[var(--color-text-muted)]">选择备份文件的导入方式：</p>
+            <p className="text-[13px] leading-5 text-[var(--color-text-muted)]">选择密码保护 ZIP 的导入方式：</p>
             <div className="space-y-3">
               <section className="flex items-center gap-3 rounded-[10px] border border-[var(--color-border-default)] p-3.5">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-accent-muted)] text-[var(--color-accent)]">

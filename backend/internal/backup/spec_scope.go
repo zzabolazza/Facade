@@ -101,19 +101,7 @@ func BuildScope(opts BuildOptions) (Scope, error) {
 		Description: "浏览器用户数据根目录（若与 data 重合则自动去重）",
 	})
 
-	corePaths := collectConfiguredCorePaths(cfg.Browser.Cores, appRootAbs)
-	for idx, corePath := range corePaths {
-		coreID := fmt.Sprintf("external-%02d", idx+1)
-		builder.add(ScopeEntry{
-			ID:          "browser_core_external_" + coreID,
-			Category:    CategoryCoreData,
-			EntryType:   EntryTypeDir,
-			Required:    false,
-			SourcePath:  corePath,
-			ArchivePath: "payload/browser/cores/external/" + coreID + "/",
-			Description: "已配置的内核目录",
-		})
-	}
+	// 内核仅通过数据库/配置备份元数据（路径等），绝不打包本机内核二进制目录。
 
 	scope := Scope{
 		Format:          PackageFormat,
@@ -164,26 +152,6 @@ func BuildManifest(scope Scope, appName, appVersion string, createdAt time.Time)
 		},
 		Entries: entries,
 	}
-}
-
-func collectConfiguredCorePaths(cores []config.BrowserCore, appRootAbs string) []string {
-	result := make([]string, 0)
-	seen := make(map[string]struct{})
-	for _, core := range cores {
-		corePath := strings.TrimSpace(core.CorePath)
-		if corePath == "" {
-			continue
-		}
-		coreAbs := resolvePath(appRootAbs, corePath)
-		key := normalizeForCompare(coreAbs)
-		if _, ok := seen[key]; ok {
-			continue
-		}
-		seen[key] = struct{}{}
-		result = append(result, coreAbs)
-	}
-	sort.Strings(result)
-	return result
 }
 
 func detectLogDir(appRootAbs, logPath string) string {

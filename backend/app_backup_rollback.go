@@ -30,7 +30,7 @@ func (a *App) backupCreateRollbackPackage() (string, func(), error) {
 	defer cleanupSnapshot()
 	zipPath := filepath.Join(tmpDir, "rollback.zip")
 	manifest := backup.BuildManifest(scope, a.appName(), a.appVersion(), time.Now())
-	if _, _, _, err := backupWritePackageZip(zipPath, scope, manifest, nil); err != nil {
+	if _, _, _, err := backupWritePackageZip(zipPath, scope, manifest, "", nil); err != nil {
 		cleanup()
 		return "", func() {}, fmt.Errorf("创建恢复前回滚快照失败: %w", err)
 	}
@@ -38,7 +38,7 @@ func (a *App) backupCreateRollbackPackage() (string, func(), error) {
 }
 
 func (a *App) backupRestoreRollbackPackage(zipPath string) error {
-	extractRoot, _, err := backupExtractAndValidate(zipPath)
+	extractRoot, _, err := backupExtractAndValidate(zipPath, "")
 	if err != nil {
 		return err
 	}

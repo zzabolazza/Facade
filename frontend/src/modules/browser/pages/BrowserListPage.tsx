@@ -292,8 +292,8 @@ export function BrowserListPage() {
       const result = await exportFullBrowserBackup(password)
       if (result.cancelled) return
       toast.success(result.zipPath ? `备份已导出：${result.zipPath}` : (result.message || '备份已导出'))
-    } catch (error: any) {
-      toast.error(error?.message || '全量备份失败')
+    } catch (error: unknown) {
+      toast.error(typeof error === 'string' ? error : (error as any)?.message || '全量备份失败')
     } finally {
       setBackupLoadingMode('none')
     }
@@ -315,8 +315,8 @@ export function BrowserListPage() {
       setSelectedIds(new Set())
       setBackupModalOpen(false)
       await loadProfiles()
-    } catch (error: any) {
-      toast.error(error?.message || '导入备份失败')
+    } catch (error: unknown) {
+      toast.error(typeof error === 'string' ? error : (error as any)?.message || '导入备份失败')
     } finally {
       setBackupLoadingMode('none')
     }

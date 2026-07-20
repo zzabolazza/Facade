@@ -50,7 +50,7 @@ func TestFullBackupUsesSnapshotAndDoesNotPackItsOwnOutput(t *testing.T) {
 	defer cleanup()
 	zipPath := filepath.Join(dataDir, "facade-backup.zip")
 	manifest := backup.BuildManifest(scope, "Facade", "test", time.Now())
-	if _, _, _, err := backupWritePackageZip(zipPath, scope, manifest, nil); err != nil {
+	if _, _, _, err := backupWritePackageZip(zipPath, scope, manifest, "", nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -135,12 +135,12 @@ func TestValidateFullRestorePayloadRequiresSeparateBrowserData(t *testing.T) {
 
 func TestBackupReplaceFileReplacesExistingOnlyAfterSourceIsReady(t *testing.T) {
 	root := t.TempDir()
-	src := filepath.Join(root, "new.facade")
-	dst := filepath.Join(root, "saved.facade")
-	if err := os.WriteFile(src, []byte("new encrypted backup"), 0o600); err != nil {
+	src := filepath.Join(root, "new.zip")
+	dst := filepath.Join(root, "saved.zip")
+	if err := os.WriteFile(src, []byte("new zip backup"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(dst, []byte("old encrypted backup"), 0o600); err != nil {
+	if err := os.WriteFile(dst, []byte("old zip backup"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := backupReplaceFile(src, dst); err != nil {
@@ -150,7 +150,7 @@ func TestBackupReplaceFileReplacesExistingOnlyAfterSourceIsReady(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(got) != "new encrypted backup" {
+	if string(got) != "new zip backup" {
 		t.Fatalf("unexpected replaced content: %q", got)
 	}
 }

@@ -2,10 +2,8 @@ package backend
 
 import (
 	"facade/backend/internal/config"
-	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
@@ -77,85 +75,21 @@ func (a *App) backupImportFileTrees(payloadRoot string, incomingCfg *config.Conf
 
 	externalSrcRoot := filepath.Join(payloadRoot, "browser", "cores", "external")
 	if backupPathExists(externalSrcRoot) {
-		sourceExternal := make([]string, 0)
+		// 内核文件不在备份范围内：旧包若仍含外部内核树，一律跳过，绝不写入本机 core_path。
 		entries, err := os.ReadDir(externalSrcRoot)
 		if err != nil {
-			report("browser_core_external", "额外内核目录（来自配置 cores）", err)
+			stats.Skipped++
 			return
 		}
+		skippedFolders := 0
 		for _, entry := range entries {
-			if !entry.IsDir() {
-				continue
-			}
-			sourceExternal = append(sourceExternal, entry.Name())
-		}
-		sort.Strings(sourceExternal)
-
-		if incomingCfg == nil {
-			for _, folder := range sourceExternal {
-				componentID := "browser_core_external_" + folder
-				report(componentID, "额外内核目录（来自配置 cores）", fmt.Errorf("缺少可用配置，无法映射目标路径"))
-			}
-			return
-		}
-
-		targetExternal := a.backupCollectExternalCorePaths(incomingCfg)
-		for i, folder := range sourceExternal {
-			src := filepath.Join(externalSrcRoot, folder)
-			componentID := "browser_core_external_" + folder
-			if i >= len(targetExternal) {
+			if entry.IsDir() {
+				skippedFolders++
 				stats.Skipped++
-				report(componentID, "额外内核目录（来自配置 cores）", fmt.Errorf("目标配置缺失，无法导入该外部内核目录"))
-				continue
-			}
-			dst := targetExternal[i]
-			if resetFirst {
-				if err := os.RemoveAll(dst); err != nil {
-					report(componentID, "额外内核目录（来自配置 cores）", err)
-					continue
-				}
-				if err := os.MkdirAll(dst, 0755); err != nil {
-					report(componentID, "额外内核目录（来自配置 cores）", err)
-					continue
-				}
-				if err := backupSyncDir(src, dst, true, stats, nil); err != nil {
-					report(componentID, "额外内核目录（来自配置 cores）", err)
-					continue
-				}
-			} else {
-				if err := backupSyncDir(src, dst, false, stats, nil); err != nil {
-					report(componentID, "额外内核目录（来自配置 cores）", err)
-					continue
-				}
 			}
 		}
-	}
-}
-
-func (a *App) backupCollectExternalCorePaths(cfg *config.Config) []string {
-	if cfg == nil {
-		return nil
-	}
-	seen := map[string]struct{}{}
-	result := make([]string, 0)
-	for _, core := range cfg.Browser.Cores {
-		p := strings.TrimSpace(core.CorePath)
-		if p == "" {
-			continue
+		if skippedFolders == 0 {
+			stats.Skipped++
 		}
-		abs := p
-		if !filepath.IsAbs(p) {
-			abs = a.resolveAppPath(p)
-		} else {
-			abs = filepath.Clean(p)
-		}
-		norm := backupNormalizePath(abs)
-		if _, ok := seen[norm]; ok {
-			continue
-		}
-		seen[norm] = struct{}{}
-		result = append(result, abs)
 	}
-	sort.Strings(result)
-	return result
 }

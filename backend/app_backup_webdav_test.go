@@ -36,19 +36,19 @@ func TestBackupUploadWebDAVCreatesDirectoryAndUploads(t *testing.T) {
 	defer server.Close()
 
 	root := t.TempDir()
-	localPath := filepath.Join(root, "backup.facade")
-	want := []byte("encrypted backup")
+	localPath := filepath.Join(root, "backup.zip")
+	want := []byte("zip backup")
 	if err := os.WriteFile(localPath, want, 0o600); err != nil {
 		t.Fatal(err)
 	}
 	app := &App{config: &config.Config{Backup: config.BackupConfig{WebDAV: config.WebDAVConfig{
 		URL: server.URL, Username: "alice", Password: "secret", RemoteDir: "Facade/Backups",
 	}}}}
-	remoteURL, err := app.backupUploadWebDAV(context.Background(), localPath, "test.facade")
+	remoteURL, err := app.backupUploadWebDAV(context.Background(), localPath, "test.zip")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if remoteURL != server.URL+"/Facade/Backups/test.facade" {
+	if remoteURL != server.URL+"/Facade/Backups/test.zip" {
 		t.Fatalf("unexpected remote URL: %s", remoteURL)
 	}
 	if string(uploaded) != string(want) {

@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 )
 
-func (a *App) backupImportFromPathLocked(zipPath string, resetFirst bool) (result map[string]interface{}, retErr error) {
+func (a *App) backupImportFromPathLocked(zipPath string, resetFirst bool, password string) (result map[string]interface{}, retErr error) {
 	a.backupStopRuntimeForMaintenance()
 	a.backupEmitImportProgress("preparing", 10, "正在解压并校验备份包...")
 
-	extractRoot, manifest, err := backupExtractAndValidate(zipPath)
+	extractRoot, manifest, err := backupExtractAndValidate(zipPath, password)
 	if err != nil {
 		return nil, err
 	}
