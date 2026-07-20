@@ -34,14 +34,17 @@ func extractExtensionIDFromURL(rawURL string) string {
 	return ""
 }
 
-func downloadChromeExtensionCRX(ctx context.Context, extensionID string, client *http.Client) ([]byte, error) {
+func downloadChromeExtensionCRX(ctx context.Context, extensionID, prodVersion string, client *http.Client) ([]byte, error) {
 	if client == nil {
 		client = &http.Client{Timeout: extensionDownloadTimeout}
 	}
-	downloadURL := BuildChromeExtensionDownloadURL(extensionID)
+	downloadURL := BuildChromeExtensionDownloadURL(extensionID, prodVersion)
+	if downloadURL == "" {
+		return nil, fmt.Errorf("无法构建插件下载地址：缺少有效的插件 ID 或 Chrome 版本")
+	}
 	var lastErr error
 	for attempt := 1; attempt <= 3; attempt++ {
-		data, err := downloadChromeExtensionCRXOnce(ctx, client, downloadURL)
+		data, err := downloadChromeExtensionCRXOnce(ctx, client, downloadURL, prodVersion)
 		if err == nil {
 			return data, nil
 		}
@@ -58,18 +61,25 @@ func downloadChromeExtensionCRX(ctx context.Context, extensionID string, client 
 	return nil, formatExtensionDownloadError(lastErr)
 }
 
-func downloadChromeExtensionCRXOnce(ctx context.Context, client *http.Client, downloadURL string) ([]byte, error) {
+func downloadChromeExtensionCRXOnce(ctx context.Context, client *http.Client, downloadURL, prodVersion string) ([]byte, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 	if err != nil {
 		return nil, err
 	}
-	request.Header.Set("User-Agent", "Mozilla/5.0 AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36")
+	userAgentVersion := NormalizeChromeProdVersion(prodVersion)
+	if userAgentVersion == "" {
+		userAgentVersion = "0.0.0.0"
+	}
+	request.Header.Set("User-Agent", "Mozilla/5.0 AppleWebKit/537.36 Chrome/"+userAgentVersion+" Safari/537.36")
 	request.Header.Set("Accept", "*/*")
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("下载插件失败: %w", err)
 	}
 	defer response.Body.Close()
+	if response.StatusCode == http.StatusNoContent {
+		return nil, fmt.Errorf("下载插件失败: 商店未返回插件包（HTTP 204），该插件可能要求更高 Chrome 版本或当前区域不可用")
+	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		return nil, fmt.Errorf("下载插件失败: HTTP %d", response.StatusCode)
 	}
@@ -77,6 +87,9 @@ func downloadChromeExtensionCRXOnce(ctx context.Context, client *http.Client, do
 	data, err := io.ReadAll(limited)
 	if err != nil {
 		return nil, fmt.Errorf("读取插件包失败: %w", err)
+	}
+	if len(data) == 0 {
+		return nil, fmt.Errorf("下载插件失败: 商店返回空插件包")
 	}
 	if len(data) > extensionMaxPackageBytes {
 		return nil, fmt.Errorf("插件包超过限制")
@@ -111,14 +124,37 @@ func formatExtensionDownloadError(err error) error {
 }
 
 func normalizeExtensionArchiveData(data []byte) ([]byte, error) {
+	if len(data) == 0 {
+		return nil, fmt.Errorf("插件包为空")
+	}
 	if bytes.HasPrefix(data, []byte("PK\x03\x04")) {
 		return data, nil
 	}
 	zipOffset := bytes.Index(data, []byte("PK\x03\x04"))
 	if zipOffset < 0 {
+		snippet := strings.TrimSpace(string(data))
+		if len(snippet) > 120 {
+			snippet = snippet[:120] + "..."
+		}
+		if snippet != "" && isMostlyPrintable(snippet) {
+			return nil, fmt.Errorf("插件包不是有效的 CRX/ZIP 文件（响应更像文本/HTML：%s）", snippet)
+		}
 		return nil, fmt.Errorf("插件包不是有效的 CRX/ZIP 文件")
 	}
 	return data[zipOffset:], nil
+}
+
+func isMostlyPrintable(value string) bool {
+	if value == "" {
+		return false
+	}
+	printable := 0
+	for _, r := range value {
+		if r == '\n' || r == '\r' || r == '\t' || (r >= 32 && r < 127) {
+			printable++
+		}
+	}
+	return printable*100/len([]rune(value)) >= 80
 }
 
 func readExtensionManifestFromZip(data []byte) ([]byte, error) {

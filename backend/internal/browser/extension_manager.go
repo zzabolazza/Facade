@@ -56,12 +56,46 @@ func BuildChromeWebStoreURL(extensionID string) string {
 	return "https://chromewebstore.google.com/detail/" + normalizedID
 }
 
-func BuildChromeExtensionDownloadURL(extensionID string) string {
+func BuildChromeExtensionDownloadURL(extensionID, prodVersion string) string {
 	normalizedID := NormalizeExtensionID(extensionID)
-	if normalizedID == "" {
+	prodVersion = NormalizeChromeProdVersion(prodVersion)
+	if normalizedID == "" || prodVersion == "" {
 		return ""
 	}
-	return "https://clients2.google.com/service/update2/crx?response=redirect&prodversion=120.0.0.0&acceptformat=crx2,crx3&x=id%3D" + normalizedID + "%26installsource%3Dondemand%26uc"
+	return "https://clients2.google.com/service/update2/crx?response=redirect&prodversion=" +
+		prodVersion +
+		"&acceptformat=crx2,crx3&x=id%3D" + normalizedID + "%26installsource%3Dondemand%26uc"
+}
+
+// NormalizeChromeProdVersion 从内核版本字符串中提取可供商店下载使用的 Chrome 版本号。
+func NormalizeChromeProdVersion(version string) string {
+	trimmed := strings.TrimSpace(version)
+	if trimmed == "" {
+		return ""
+	}
+	match := chromeProdVersionPattern.FindString(trimmed)
+	return match
+}
+
+var chromeProdVersionPattern = regexp.MustCompile(`\d+(?:\.\d+){1,3}`)
+
+// ResolveExtensionDownloadProdVersion 使用已配置内核路径（优先默认内核）解析出的
+// Chromium/Chrome 版本，作为商店下载时的 prodversion。
+func (m *Manager) ResolveExtensionDownloadProdVersion() (string, error) {
+	if m == nil {
+		return "", fmt.Errorf("浏览器管理器未初始化")
+	}
+	if core, ok := m.GetDefaultCore(); ok {
+		if version := NormalizeChromeProdVersion(m.GetChromeVersion(core.CorePath)); version != "" {
+			return version, nil
+		}
+	}
+	for _, core := range m.ListCores() {
+		if version := NormalizeChromeProdVersion(m.GetChromeVersion(core.CorePath)); version != "" {
+			return version, nil
+		}
+	}
+	return "", fmt.Errorf("无法从已配置的 Chromium/Chrome 内核路径读取版本，请确认内核管理中的路径有效")
 }
 
 func (m *Manager) LookupExtension(query string) (ExtensionLookupResult, error) {
@@ -80,7 +114,12 @@ func (m *Manager) LookupExtensionWithHTTPClient(query string, client *http.Clien
 		Installable: true,
 		Message:     "已识别插件 ID，可下载安装",
 	}
-	data, err := downloadChromeExtensionCRX(context.Background(), extensionID, client)
+	prodVersion, err := m.ResolveExtensionDownloadProdVersion()
+	if err != nil {
+		result.Message = "已识别插件 ID，但暂时无法读取商店元信息: " + err.Error()
+		return result, nil
+	}
+	data, err := downloadChromeExtensionCRX(context.Background(), extensionID, prodVersion, client)
 	if err != nil {
 		result.Message = "已识别插件 ID，但暂时无法读取商店元信息: " + err.Error()
 		return result, nil
@@ -126,7 +165,11 @@ func (m *Manager) InstallExtensionFromWebStoreWithHTTPClient(ctx context.Context
 	if extensionID == "" {
 		return Extension{}, fmt.Errorf("请输入 Chrome 插件 ID 或 Chrome Web Store 链接")
 	}
-	data, err := downloadChromeExtensionCRX(ctx, extensionID, client)
+	prodVersion, err := m.ResolveExtensionDownloadProdVersion()
+	if err != nil {
+		return Extension{}, err
+	}
+	data, err := downloadChromeExtensionCRX(ctx, extensionID, prodVersion, client)
 	if err != nil {
 		return Extension{}, err
 	}

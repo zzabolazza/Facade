@@ -1,13 +1,15 @@
 package browser
 
 import (
-	"encoding/json"
+	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
-// GetChromeVersion 从 manifest.json 读取 Chrome 版本号
+// GetChromeVersion 通过已配置内核路径定位可执行文件，并执行 `--version` 获取版本号。
 func (m *Manager) GetChromeVersion(corePath string) string {
 	corePath = strings.TrimSpace(corePath)
 	if corePath == "" {
@@ -15,33 +17,34 @@ func (m *Manager) GetChromeVersion(corePath string) string {
 	}
 
 	baseDir := m.ResolveRelativePath(corePath)
+	exePath, _, ok := FindCoreExecutable(baseDir)
+	if !ok {
+		return ""
+	}
+	return readChromeVersionFromExecutable(exePath)
+}
 
-	// 尝试读取 manifest.json 或 *.manifest 文件
-	manifestPath := filepath.Join(baseDir, "manifest.json")
-	data, err := os.ReadFile(manifestPath)
+func readChromeVersionFromExecutable(exePath string) string {
+	exePath = strings.TrimSpace(exePath)
+	if exePath == "" {
+		return ""
+	}
+	if abs, err := filepath.Abs(exePath); err == nil {
+		exePath = abs
+	}
+	if info, err := os.Stat(exePath); err != nil || info.IsDir() {
+		return ""
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, exePath, "--version")
+	cmd.Env = append(os.Environ(), "CHROME_HEADLESS=1")
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		// 尝试查找 *.manifest 文件
-		matches, _ := filepath.Glob(filepath.Join(baseDir, "*.manifest"))
-		if len(matches) > 0 {
-			// 从文件名提取版本号，如 "142.0.7444.175.manifest"
-			baseName := filepath.Base(matches[0])
-			version := strings.TrimSuffix(baseName, ".manifest")
-			if version != "" {
-				return version
-			}
-		}
 		return ""
 	}
-
-	// 解析 JSON
-	var manifest struct {
-		Version string `json:"version"`
-	}
-	if err := json.Unmarshal(data, &manifest); err != nil {
-		return ""
-	}
-
-	return manifest.Version
+	return NormalizeChromeProdVersion(string(output))
 }
 
 // CountInstancesByCore 统计使用指定内核的实例数量
