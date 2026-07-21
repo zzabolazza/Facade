@@ -3,6 +3,7 @@ package backend
 import (
 	"context"
 	"facade/backend/internal/config"
+	"facade/backend/internal/logger"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -298,4 +299,57 @@ WHERE NOT EXISTS (
 	}
 
 	return tx.Commit()
+}
+
+func (a *App) backupFixExtensionInstallDirs() error {
+	if a.db == nil || a.db.GetConn() == nil {
+		return nil
+	}
+	ctx := context.Background()
+	conn, err := a.db.GetConn().Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	rows, err := conn.QueryContext(ctx, `SELECT extension_id, install_dir FROM browser_extensions`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	type extRecord struct {
+		id       string
+		installDir string
+	}
+	var records []extRecord
+	for rows.Next() {
+		var r extRecord
+		if err := rows.Scan(&r.id, &r.installDir); err != nil {
+			return err
+		}
+		records = append(records, r)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	updated := 0
+	for _, r := range records {
+		expectedDir := a.resolveAppPath(filepath.Join("data", "extensions", r.id))
+		normalizedExpected := filepath.Clean(expectedDir)
+		normalizedCurrent := filepath.Clean(strings.TrimSpace(r.installDir))
+		if normalizedCurrent == normalizedExpected {
+			continue
+		}
+		if _, err := conn.ExecContext(ctx, `UPDATE browser_extensions SET install_dir = ? WHERE extension_id = ?`, expectedDir, r.id); err != nil {
+			continue
+		}
+		updated++
+	}
+	if updated > 0 {
+		log := logger.New("Backup")
+		log.Info("已修正扩展安装路径", logger.F("count", updated))
+	}
+	return nil
 }

@@ -3,6 +3,7 @@ package backend
 import (
 	"errors"
 	"facade/backend/internal/database"
+	"facade/backend/internal/logger"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -143,6 +144,10 @@ func (a *App) backupImportFromPathLocked(zipPath string, resetFirst bool, passwo
 	}
 	if resetIssue != nil {
 		return nil, resetIssue
+	}
+
+	if err := a.backupFixExtensionInstallDirs(); err != nil {
+		logger.New("Backup").Warn("修正扩展安装路径失败", logger.F("error", err.Error()))
 	}
 
 	a.backupEmitImportProgress("importing", 86, "正在同步文件数据...")

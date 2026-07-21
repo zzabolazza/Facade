@@ -38,7 +38,7 @@ func readChromeVersionFromExecutable(exePath string) string {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, exePath, "--version")
+	cmd := exec.CommandContext(ctx, exePath, "--headless=new", "--version")
 	cmd.Env = append(os.Environ(), "CHROME_HEADLESS=1")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
