@@ -292,5 +292,38 @@ func buildBrowserLaunchArgs(profile *BrowserProfile, userDataDir string, debugPo
 	args = append(args, profile.FingerprintArgs...)
 	args = append(args, sanitizedProfileLaunchArgs...)
 	args = append(args, sanitizedExtraLaunchArgs...)
+	args = appendDerivedAcceptLanguageArg(args)
 	return browser.BuildLaunchArgs(args, launchTargets)
+}
+
+func appendDerivedAcceptLanguageArg(args []string) []string {
+	lang := ""
+	for _, arg := range args {
+		key, value, found := strings.Cut(strings.TrimSpace(arg), "=")
+		if !found {
+			continue
+		}
+		switch {
+		case strings.EqualFold(key, "--accept-lang"):
+			return args
+		case strings.EqualFold(key, "--lang"):
+			lang = strings.TrimSpace(value)
+		}
+	}
+	if lang == "" {
+		return args
+	}
+
+	parts := strings.FieldsFunc(lang, func(r rune) bool {
+		return r == '-' || r == '_'
+	})
+	if len(parts) == 0 {
+		return args
+	}
+	primary := strings.ToLower(parts[0])
+	acceptLanguage := lang
+	if !strings.EqualFold(primary, lang) {
+		acceptLanguage += "," + primary
+	}
+	return append(args, "--accept-lang="+acceptLanguage)
 }
